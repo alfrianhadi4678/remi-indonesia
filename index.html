@@ -387,15 +387,31 @@ function createDeck() {
     }
   }
 
-  deck.push({
-    value: 0, label: "JOKER", suit: "★",
-    color: "red", joker: true
-  });
+  
+  // 2 Joker merah
+  for (let i = 0; i < 2; i++) {
+    deck.push({
+      value: 0,
+      label: "JOKER",
+      suit: "★",
+      color: "red",
+      joker: true,
+      jokerColor: "red"
+    });
+  }
 
-  deck.push({
-    value: 0, label: "JOKER", suit: "★",
-    color: "red", joker: true
-  });
+  // 2 Joker hitam
+  for (let i = 0; i < 2; i++) {
+    deck.push({
+      value: 0,
+      label: "JOKER",
+      suit: "★",
+      color: "black",
+      joker: true,
+      jokerColor: "black"
+    });
+  }
+
 
   return deck;
 }
