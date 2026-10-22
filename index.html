@@ -584,8 +584,44 @@ element.addEventListener("click", () => {
 }
 
 renderPlayerHand();
-
 console.log("Remi Indonesia siap.");
+  
+function updatePileCounts() {
+  const drawCount = document.getElementById("draw-count");
+  const discardCount = document.getElementById("discard-count");
+
+  if (drawCount) {
+    drawCount.textContent =
+      `${window.remiGame.drawPile.length} kartu tersisa`;
+  }
+
+  if (discardCount) {
+    discardCount.textContent =
+      `${window.remiGame.discardPile.length} kartu`;
+  }
+}
+
+document.getElementById("draw-button").addEventListener("click", () => {
+  const game = window.remiGame;
+
+  if (game.hasDrawn) {
+    alert("Kamu sudah mengambil kartu pada giliran ini.");
+    return;
+  }
+
+  if (game.drawPile.length === 0) {
+    alert("Draw Pile sudah habis.");
+    return;
+  }
+
+  game.players[0].push(game.drawPile.pop());
+  game.hasDrawn = true;
+  game.selectedCardIndex = null;
+
+  renderPlayerHand();
+  updatePileCounts();
+});
+  
 console.log("Jumlah kartu setiap pemain:",
   window.remiGame.players.map(hand => hand.length));
 console.log("Sisa kartu di Draw Pile:",
