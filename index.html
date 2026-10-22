@@ -321,19 +321,17 @@
       </div>
 
       <div class="middle">
-        <div class="pile">
-          <div class="back">✦</div>
-          <h3>Draw Pile</h3>
-          <p>Kartu tertutup</p>
-        </div>
-        <div class="pile">
-          <div class="cards" style="justify-content:center">
-            <div class="card red">A♥</div>
-            <div class="card">3♠</div>
-            <div class="card red">5♦</div>
-          </div>
-          <h3>Discard Pile</h3>
-          <p>7 kartu terakhir</p>
+        <div class="pile" id="draw-pile">
+        <div class="back">✦</div>
+        <h3>Draw Pile</h3>
+        <p id="draw-count">Kartu tertutup</p>
+      </div>
+
+      <div class="pile" id="discard-pile">
+        <div class="cards" id="discard-cards"
+         style="justify-content:center"></div>
+        <h3>Discard Pile</h3>
+        <p id="discard-count">Belum ada kartu</p>
         </div>
       </div>
 
