@@ -626,6 +626,9 @@ document.getElementById("draw-button").addEventListener("click", () => {
 document.getElementById("discard-button").addEventListener("click", () => {
   const game = window.remiGame;
 
+  console.log("hasDrawn:", game.hasDrawn);
+  console.log("selectedCardIndex:", game.selectedCardIndex);
+
   if (!game.hasDrawn) {
     alert("Ambil kartu terlebih dahulu.");
     return;
