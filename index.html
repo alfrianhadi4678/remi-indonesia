@@ -313,16 +313,8 @@
       </section>
 
       <section class="hand">
-        <h3>Kartu Anda · 7 kartu</h3>
-        <div class="cards">
-          <div class="card red">2♥</div>
-          <div class="card red">4♦</div>
-          <div class="card">7♠</div>
-          <div class="card red">9♦</div>
-          <div class="card">J♣</div>
-          <div class="card red">Q♥</div>
-          <div class="card">K♠</div>
-        </div>
+        <h3 id="hand-title">Kartu Anda · 7 kartu</h3>
+        <div class="cards" id="player-hand"></div>
       </section>
     </section>
 
@@ -443,6 +435,43 @@ function dealCards(playerCount = 4) {
 
 /* Tes mesin kartu secara otomatis */
 window.remiGame = dealCards(4);
+
+function renderPlayerHand() {
+  const handElement = document.getElementById("player-hand");
+  const titleElement = document.getElementById("hand-title");
+
+  if (!handElement || !titleElement) {
+    console.error("Area kartu pemain tidak ditemukan.");
+    return;
+  }
+
+  const hand = window.remiGame.players[0];
+
+  titleElement.textContent = `Kartu Anda · ${hand.length} kartu`;
+  handElement.replaceChildren();
+
+  hand.forEach((card, index) => {
+    const element = document.createElement("div");
+    element.className = "card";
+
+    if (card.color === "red") {
+      element.classList.add("red");
+    }
+
+    element.textContent = card.joker
+      ? "★ JOKER"
+      : `${card.label}${card.suit}`;
+
+    element.title = card.joker
+      ? "Joker"
+      : `${card.label} ${card.suitName}`;
+
+    element.dataset.cardIndex = index;
+    handElement.appendChild(element);
+  });
+}
+
+renderPlayerHand();
 
 console.log("Remi Indonesia siap.");
 console.log("Jumlah kartu setiap pemain:",
