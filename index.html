@@ -502,7 +502,7 @@ function dealCards(playerCount = 4) {
 
 /* Tes mesin kartu secara otomatis */
 window.remiGame = dealCards(4);
-
+window.remiGame.selectedCardIndex = null;
 function renderPlayerHand() {
   const handElement = document.getElementById("player-hand");
   const titleElement = document.getElementById("hand-title");
@@ -520,6 +520,18 @@ function renderPlayerHand() {
   hand.forEach((card, index) => {
     const element = document.createElement("div");
     element.className = "card";
+    
+    element.classList.add("selectable");
+
+    if (window.remiGame.selectedCardIndex === index) {
+    element.classList.add("selected");
+    }
+
+element.addEventListener("click", () => {
+  window.remiGame.selectedCardIndex = index;
+  renderPlayerHand();
+});
+
 
     if (card.color === "red") {
       element.classList.add("red");
