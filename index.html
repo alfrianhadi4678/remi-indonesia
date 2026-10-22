@@ -621,6 +621,52 @@ document.getElementById("draw-button").addEventListener("click", () => {
   renderPlayerHand();
   updatePileCounts();
 });
+
+
+document.getElementById("discard-button").addEventListener("click", () => {
+  const game = window.remiGame;
+
+  if (!game.hasDrawn) {
+    alert("Ambil kartu terlebih dahulu.");
+    return;
+  }
+
+  if (game.selectedCardIndex === null ||
+      game.selectedCardIndex === undefined) {
+    alert("Pilih satu kartu yang ingin dibuang.");
+    return;
+  }
+
+  const hand = game.players[0];
+  const discarded = hand.splice(game.selectedCardIndex, 1)[0];
+
+  game.discardPile.push(discarded);
+  game.selectedCardIndex = null;
+  game.hasDrawn = false;
+
+  renderPlayerHand();
+  updatePileCounts();
+
+  const discardCards = document.getElementById("discard-cards");
+  if (discardCards) {
+    discardCards.replaceChildren();
+
+    game.discardPile.slice(-3).forEach(card => {
+      const element = document.createElement("div");
+      element.className = "card";
+
+      if (card.color === "red") {
+        element.classList.add("red");
+      }
+
+      element.textContent = card.joker
+        ? "JOKER"
+        : `${card.label}${card.suit}`;
+
+      discardCards.appendChild(element);
+    });
+  }
+});
   
 console.log("Jumlah kartu setiap pemain:",
   window.remiGame.players.map(hand => hand.length));
