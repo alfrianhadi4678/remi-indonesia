@@ -1,1 +1,363 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remi Indonesia</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #101714;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      padding: 18px;
+      background: #17251f;
+      border-bottom: 2px solid #b99752;
+      text-align: center;
+    }
+
+    header h1 { margin: 0 0 6px; }
+    header p { margin: 0; color: #c6d5cc; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 230px;
+      gap: 14px;
+      padding: 14px;
+      align-items: start;
+    }
+
+    .table {
+      min-width: 0;
+      padding: 18px;
+      background: #07533c;
+      border: 6px solid #684b2b;
+      border-radius: 24px;
+      box-shadow: inset 0 0 25px #002b1e;
+    }
+
+    .opponents {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .player, .panel {
+      background: #123c30;
+      border: 1px solid #4b8d70;
+      border-radius: 12px;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .player h3, .panel h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .score {
+      color: #ffd56a;
+      float: right;
+    }
+
+    .meld-area {
+      min-height: 85px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 12px;
+    }
+
+    .meld {
+      background: #0b3026;
+      border: 1px solid #b99c58;
+      border-radius: 8px;
+      padding: 8px;
+      max-width: 100%;
+    }
+
+    .meld small {
+      display: block;
+      color: #f6d579;
+      margin-bottom: 7px;
+    }
+
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+
+    .card {
+      width: 43px;
+      height: 62px;
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 5px;
+      background: #fffdf5;
+      color: #171717;
+      border: 1px solid #d4d0c4;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 17px;
+    }
+
+    .red { color: #d62929; }
+
+    .middle {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .pile {
+      min-height: 135px;
+      text-align: center;
+      padding: 18px 8px;
+      background: #06432f;
+      border: 1px dashed #83b69c;
+      border-radius: 12px;
+    }
+
+    .back {
+      display: inline-grid;
+      place-items: center;
+      width: 55px;
+      height: 76px;
+      margin: 4px;
+      background: repeating-linear-gradient(
+        45deg, #214d9a, #214d9a 5px, #315fae 5px, #315fae 10px
+      );
+      border: 3px solid #f5f0de;
+      border-radius: 6px;
+      font-size: 20px;
+    }
+
+    .hand {
+      margin-top: 18px;
+      padding: 14px;
+      background: #174b37;
+      border: 2px solid #e4bd54;
+      border-radius: 12px;
+    }
+
+    .hand h3 { margin-top: 0; }
+
+    .hand .cards { gap: 5px; }
+
+    .sidebar {
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      background: #18231e;
+      border-color: #655638;
+    }
+
+    .player-score {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #34453b;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 8px;
+      padding: 12px;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      border: 0;
+      border-radius: 8px;
+      background: #167447;
+      cursor: pointer;
+    }
+
+    button.discard { background: #98651e; }
+
+    .note {
+      margin: 0 14px 18px;
+      padding: 14px;
+      color: #c8d7cd;
+      background: #17231d;
+      border-radius: 10px;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    @media (max-width: 850px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .opponents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 480px) {
+      .opponents, .sidebar { grid-template-columns: 1fr; }
+      .table { padding: 9px; }
+      .card { width: 36px; height: 54px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>♠ Remi Indonesia ♥</h1>
+    <p>Permainan kartu multiplayer · 2–4 pemain</p>
+  </header>
+
+  <main class="layout">
+    <section class="table">
+      <div class="opponents">
+        <section class="player">
+          <h3>Pemain 1 <span class="score">80 poin</span></h3>
+          <div class="cards">
+            <div class="back">✦</div>
+            <div class="back">✦</div>
+            <div class="back">✦</div>
+          </div>
+          <p>Kombinasi terbuka</p>
+          <div class="meld-area">
+            <div class="meld">
+              <small>SERI · Pemain 1</small>
+              <div class="cards">
+                <div class="card">4♥</div>
+                <div class="card red">5♥</div>
+                <div class="card red">6♥</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="player">
+          <h3>Pemain 2 <span class="score">120 poin</span></h3>
+          <div class="cards">
+            <div class="back">✦</div>
+            <div class="back">✦</div>
+            <div class="back">✦</div>
+          </div>
+          <p>Kombinasi terbuka</p>
+          <div class="meld-area">
+            <div class="meld">
+              <small>TRIS · Pemain 2</small>
+              <div class="cards">
+                <div class="card">7♠</div>
+                <div class="card red">7♦</div>
+                <div class="card">7♣</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="player">
+          <h3>Pemain 3 <span class="score">95 poin</span></h3>
+          <div class="cards">
+            <div class="back">✦</div>
+            <div class="back">✦</div>
+            <div class="back">✦</div>
+          </div>
+          <p>Kombinasi terbuka</p>
+          <div class="meld-area">
+            <div class="meld">
+              <small>SERI · Pemain 3</small>
+              <div class="cards">
+                <div class="card">8♣</div>
+                <div class="card">9♣</div>
+                <div class="card">10♣</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="middle">
+        <div class="pile">
+          <div class="back">✦</div>
+          <h3>Draw Pile</h3>
+          <p>Kartu tertutup</p>
+        </div>
+        <div class="pile">
+          <div class="cards" style="justify-content:center">
+            <div class="card red">A♥</div>
+            <div class="card">3♠</div>
+            <div class="card red">5♦</div>
+          </div>
+          <h3>Discard Pile</h3>
+          <p>7 kartu terakhir</p>
+        </div>
+      </div>
+
+      <section class="player">
+        <h3>Kombinasi terbuka — Anda</h3>
+        <div class="meld-area">
+          <div class="meld">
+            <small>SERI · Anda</small>
+            <div class="cards">
+              <div class="card red">2♥</div>
+              <div class="card red">3♥</div>
+              <div class="card red">4♥</div>
+              <div class="card red">5♥</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="hand">
+        <h3>Kartu Anda · 7 kartu</h3>
+        <div class="cards">
+          <div class="card red">2♥</div>
+          <div class="card red">4♦</div>
+          <div class="card">7♠</div>
+          <div class="card red">9♦</div>
+          <div class="card">J♣</div>
+          <div class="card red">Q♥</div>
+          <div class="card">K♠</div>
+        </div>
+      </section>
+    </section>
+
+    <aside class="sidebar">
+      <section class="panel">
+        <h3>Skor sementara</h3>
+        <div class="player-score"><span>Anda</span><b>150</b></div>
+        <div class="player-score"><span>Pemain 1</span><b>80</b></div>
+        <div class="player-score"><span>Pemain 2</span><b>120</b></div>
+        <div class="player-score"><span>Pemain 3</span><b>95</b></div>
+      </section>
+
+      <section class="panel">
+        <h3>Giliran saat ini</h3>
+        <p>🟢 Giliran Anda</p>
+        <button>AMBIL / MAKAN</button>
+        <button class="discard">BUANG KARTU</button>
+      </section>
+
+      <section class="panel">
+        <h3>Penalti kelebihan makan</h3>
+        <div class="player-score"><span>Anda</span><b>0</b></div>
+        <div class="player-score"><span>Pemain 1</span><b>0</b></div>
+      </section>
+    </aside>
+  </main>
+
+  <section class="note">
+    <b>Remi Indonesia — Prototipe tampilan</b><br>
+    Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
+    dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
+    mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
+    <br><br>
+    <b>Status:</b> Ini baru tampilan contoh. Aturan kartu, skor, giliran,
+    dan multiplayer belum diaktifkan.
+  </section>
+</body>
+</html>
