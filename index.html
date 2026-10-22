@@ -654,7 +654,7 @@ document.getElementById("discard-button").addEventListener("click", () => {
   if (discardCards) {
     discardCards.replaceChildren();
 
-    game.discardPile.slice(-3).forEach(card => {
+    game.discardPile.forEach(card => {
       const element = document.createElement("div");
       element.className = "card";
 
