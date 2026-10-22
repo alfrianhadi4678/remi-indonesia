@@ -359,5 +359,98 @@
     <b>Status:</b> Ini baru tampilan contoh. Aturan kartu, skor, giliran,
     dan multiplayer belum diaktifkan.
   </section>
+
+  
+<script>
+/* MESIN KARTU AWAL - REMI INDONESIA */
+
+const suits = [
+  { name: "Sekop", symbol: "♠", color: "black" },
+  { name: "Hati", symbol: "♥", color: "red" },
+  { name: "Wajik", symbol: "♦", color: "red" },
+  { name: "Keriting", symbol: "♣", color: "black" }
+];
+
+function createDeck() {
+  const deck = [];
+
+  for (const suit of suits) {
+    for (let value = 2; value <= 14; value++) {
+      let label;
+
+      if (value <= 10) label = String(value);
+      else if (value === 11) label = "J";
+      else if (value === 12) label = "Q";
+      else if (value === 13) label = "K";
+      else label = "A";
+
+      deck.push({
+        value,
+        label,
+        suit: suit.symbol,
+        suitName: suit.name,
+        color: suit.color,
+        joker: false
+      });
+    }
+  }
+
+  deck.push({
+    value: 0, label: "JOKER", suit: "★",
+    color: "red", joker: true
+  });
+
+  deck.push({
+    value: 0, label: "JOKER", suit: "★",
+    color: "red", joker: true
+  });
+
+  return deck;
+}
+
+function shuffleDeck(deck) {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+
+  return deck;
+}
+
+function dealCards(playerCount = 4) {
+  if (playerCount < 2 || playerCount > 4) {
+    throw new Error("Jumlah pemain harus 2 sampai 4.");
+  }
+
+  const deck = shuffleDeck(createDeck());
+  const players = Array.from(
+    { length: playerCount },
+    () => []
+  );
+
+  for (let round = 0; round < 7; round++) {
+    for (let player = 0; player < playerCount; player++) {
+      players[player].push(deck.pop());
+    }
+  }
+
+  return {
+    players,
+    drawPile: deck,
+    discardPile: []
+  };
+}
+
+/* Tes mesin kartu secara otomatis */
+window.remiGame = dealCards(4);
+
+console.log("Remi Indonesia siap.");
+console.log("Jumlah kartu setiap pemain:",
+  window.remiGame.players.map(hand => hand.length));
+console.log("Sisa kartu di Draw Pile:",
+  window.remiGame.drawPile.length);
+
+</script>
+  
 </body>
 </html>
