@@ -554,6 +554,51 @@ element.addEventListener("click", () => {
   });
 }
 
+function renderOpenMelds() {
+  const game = window.remiGame;
+
+  game.openMelds.forEach((melds, playerIndex) => {
+    const areaId = playerIndex === 0
+      ? "player-melds"
+      : `player-${playerIndex}-melds`;
+
+    const area = document.getElementById(areaId);
+
+    if (!area) return;
+
+    area.replaceChildren();
+
+    melds.forEach((meld, meldIndex) => {
+      const meldElement = document.createElement("div");
+      meldElement.className = "meld";
+
+      const title = document.createElement("small");
+      title.textContent = `Kombinasi ${meldIndex + 1}`;
+
+      const cardsElement = document.createElement("div");
+      cardsElement.className = "cards";
+
+      meld.forEach(card => {
+        const cardElement = document.createElement("div");
+        cardElement.className = "card";
+
+        if (card.color === "red") {
+          cardElement.classList.add("red");
+        }
+
+        cardElement.textContent = card.joker
+          ? "JOKER"
+          : `${card.label}${card.suit}`;
+
+        cardsElement.appendChild(cardElement);
+      });
+
+      meldElement.append(title, cardsElement);
+      area.appendChild(meldElement);
+    });
+  });
+}
+
 renderPlayerHand();
 console.log("Remi Indonesia siap.");
   
