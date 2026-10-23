@@ -733,10 +733,10 @@ document.getElementById("discard-button").addEventListener("click", () => {
     return;
   }
 
-  if (game.selectedCardIndices.length === 0) {
-    alert("Pilih satu kartu yang ingin dibuang.");
-    return;
-  }
+  if (game.selectedCardIndices.length !== 1) {
+  alert("Pilih hanya satu kartu untuk dibuang.");
+  return;
+}
 
   const hand = game.players[0];
 
