@@ -464,8 +464,16 @@ function dealCards(playerCount = 4) {
 }
 
 /* Tes mesin kartu secara otomatis */
+  
 window.remiGame = dealCards(4);
 window.remiGame.selectedCardIndex = null;
+window.remiGame.hasDrawn = false;
+
+window.remiGame.openMelds = Array.from(
+  { length: window.remiGame.players.length },
+  () => []
+);
+  
 function renderPlayerHand() {
   const handElement = document.getElementById("player-hand");
   const titleElement = document.getElementById("hand-title");
