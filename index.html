@@ -569,14 +569,23 @@ function renderPlayerHand() {
     
     element.classList.add("selectable");
 
-    if (window.remiGame.selectedCardIndex === index) {
+    if (window.remiGame.selectedCardIndices.includes(index)) {
     element.classList.add("selected");
+}
+
+    element.addEventListener("click", () => {
+    const selected = window.remiGame.selectedCardIndices;
+    const selectedPosition = selected.indexOf(index);
+
+    if (selectedPosition === -1) {
+    selected.push(index);
+    } else {
+    selected.splice(selectedPosition, 1);
     }
 
-element.addEventListener("click", () => {
-  window.remiGame.selectedCardIndex = index;
-  renderPlayerHand();
+    renderPlayerHand();
 });
+
 
 
     if (card.color === "red") {
