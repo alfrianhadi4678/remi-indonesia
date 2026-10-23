@@ -549,6 +549,29 @@ function validateMeld(cards) {
     message: "Kombinasi tidak sah atau belum didukung."
   };
 }
+
+
+document.getElementById("open-meld-button").addEventListener("click", () => {
+  const game = window.remiGame;
+  const selectedIndices = game.selectedCardIndices;
+
+  if (selectedIndices.length < 3) {
+    alert("Pilih minimal 3 kartu untuk membuka kombinasi.");
+    return;
+  }
+
+  const hand = game.players[0];
+  const selectedCards = selectedIndices.map(index => hand[index]);
+
+  const result = validateMeld(selectedCards);
+
+  if (!result.valid) {
+    alert(result.message);
+    return;
+  }
+
+  alert(`Kombinasi sah: ${result.type}`);
+});  
   
 function renderPlayerHand() {
   const handElement = document.getElementById("player-hand");
