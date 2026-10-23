@@ -473,6 +473,81 @@ window.remiGame.openMelds = Array.from(
   { length: window.remiGame.players.length },
   () => []
 );
+
+function validateMeld(cards) {
+  if (!Array.isArray(cards) || cards.length < 3) {
+    return {
+      valid: false,
+      type: null,
+      message: "Kombinasi harus terdiri dari minimal 3 kartu."
+    };
+  }
+
+  const jokers = cards.filter(card => card.joker);
+  const normalCards = cards.filter(card => !card.joker);
+
+  // Seri angka: 2 sampai 10, simbol sama
+  if (
+    normalCards.length > 0 &&
+    normalCards.every(card => card.value >= 2 && card.value <= 10) &&
+    normalCards.every(card => card.suit === normalCards[0].suit)
+  ) {
+    const values = normalCards.map(card => card.value).sort((a, b) => a - b);
+    const uniqueValues = new Set(values);
+
+    if (uniqueValues.size === values.length) {
+      const min = values[0];
+      const max = values[values.length - 1];
+
+      if (max - min + 1 === cards.length) {
+        return { valid: true, type: "Seri Angka", message: "Kombinasi sah." };
+      }
+    }
+  }
+
+  // Seri Raja: J, Q, K saja. As tidak diperbolehkan.
+  if (
+    normalCards.length > 0 &&
+    normalCards.every(card => card.value >= 11 && card.value <= 13) &&
+    normalCards.every(card => card.suit === normalCards[0].suit)
+  ) {
+    const values = normalCards.map(card => card.value).sort((a, b) => a - b);
+    const uniqueValues = new Set(values);
+
+    if (
+      uniqueValues.size === values.length &&
+      values[values.length - 1] - values[0] + 1 === cards.length
+    ) {
+      return { valid: true, type: "Seri Raja", message: "Kombinasi sah." };
+    }
+  }
+
+  // Seri As: tepat 4 kartu As
+  if (
+    cards.length === 4 &&
+    normalCards.length === 4 &&
+    normalCards.every(card => card.value === 14) &&
+    new Set(normalCards.map(card => card.suit)).size === 4
+  ) {
+    return { valid: true, type: "Seri As", message: "Kombinasi sah." };
+  }
+
+  // Tris: nilai sama, simbol berbeda
+  if (
+    normalCards.length > 0 &&
+    normalCards.every(card => card.value === normalCards[0].value) &&
+    new Set(normalCards.map(card => card.suit)).size === normalCards.length &&
+    normalCards.length === cards.length
+  ) {
+    return { valid: true, type: "Tris", message: "Kombinasi sah." };
+  }
+
+  return {
+    valid: false,
+    type: null,
+    message: "Kombinasi tidak sah atau belum didukung."
+  };
+}
   
 function renderPlayerHand() {
   const handElement = document.getElementById("player-hand");
