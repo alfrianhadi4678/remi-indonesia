@@ -724,34 +724,38 @@ document.getElementById("draw-button").addEventListener("click", () => {
 });
 
 
+
 document.getElementById("discard-button").addEventListener("click", () => {
   const game = window.remiGame;
-
-  console.log("hasDrawn:", game.hasDrawn);
-  console.log("selectedCardIndex:", game.selectedCardIndex);
 
   if (!game.hasDrawn) {
     alert("Ambil kartu terlebih dahulu.");
     return;
   }
 
-  if (game.selectedCardIndex === null ||
-      game.selectedCardIndex === undefined) {
+  if (game.selectedCardIndices.length === 0) {
     alert("Pilih satu kartu yang ingin dibuang.");
     return;
   }
 
   const hand = game.players[0];
-  const discarded = hand.splice(game.selectedCardIndex, 1)[0];
+
+  // Buang satu kartu yang terakhir dipilih
+  const selectedIndex = game.selectedCardIndices[
+    game.selectedCardIndices.length - 1
+  ];
+
+  const discarded = hand.splice(selectedIndex, 1)[0];
 
   game.discardPile.push(discarded);
-  game.selectedCardIndex = null;
+  game.selectedCardIndices = [];
   game.hasDrawn = false;
 
   renderPlayerHand();
   updatePileCounts();
 
   const discardCards = document.getElementById("discard-cards");
+
   if (discardCards) {
     discardCards.replaceChildren();
 
