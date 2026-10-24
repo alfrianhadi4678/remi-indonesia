@@ -965,7 +965,74 @@ console.log("Sisa kartu di Draw Pile:",
 });
 
 
+document.getElementById("eat-discard-button").addEventListener("click", () => {
+  const game = window.remiGame;
+
+  if (game.hasDrawn) {
+    alert("Kamu sudah mengambil kartu pada giliran ini.");
+    return;
+  }
+
+  if (game.selectedDiscardIndex === null) {
+    alert("Pilih kartu pada Discard Pile terlebih dahulu.");
+    return;
+  }
+
+  const selectedIndex = game.selectedDiscardIndex;
+
+  if (
+    selectedIndex < 0 ||
+    selectedIndex >= game.discardPile.length
+  ) {
+    alert("Pilihan kartu tidak valid.");
+    return;
+  }
+
+  const takenCards = game.discardPile.splice(selectedIndex);
+
+  game.players[0].push(...takenCards);
+
+  game.selectedDiscardIndex = null;
+  game.selectedCardIndices = [];
+  game.hasDrawn = true;
+
+  renderPlayerHand();
+  updatePileCounts();
+
+  const discardCards = document.getElementById("discard-cards");
+  discardCards.replaceChildren();
+
+  game.discardPile.forEach((card, index) => {
+    const element = document.createElement("div");
+    element.className = "card";
+
+    if (card.color === "red") {
+      element.classList.add("red");
+    }
+
+    element.textContent = card.joker
+      ? "JOKER"
+      : `${card.label}${card.suit}`;
+
+    element.style.cursor = "pointer";
+
+    element.addEventListener("click", () => {
+      game.selectedDiscardIndex = index;
+
+      discardCards.querySelectorAll(".card").forEach(item => {
+        item.classList.remove("selected");
+      });
+
+      element.classList.add("selected");
+    });
+
+    discardCards.appendChild(element);
+  });
+
+  console.log("Kartu yang diambil:", takenCards);
+  console.log("Sisa Discard Pile:", game.discardPile.length);
+});
+
 </script>
-  
 </body>
 </html>
