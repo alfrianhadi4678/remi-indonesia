@@ -914,32 +914,55 @@ document.getElementById("discard-button").addEventListener("click", () => {
   renderPlayerHand();
   updatePileCounts();
 
-  const discardCards = document.getElementById("discard-cards");
-
-  if (discardCards) {
-    discardCards.replaceChildren();
-
-    game.discardPile.forEach(card => {
-      const element = document.createElement("div");
-      element.className = "card";
-
-      if (card.color === "red") {
-        element.classList.add("red");
-      }
-
-      element.textContent = card.joker
-        ? "JOKER"
-        : `${card.label}${card.suit}`;
-
-      discardCards.appendChild(element);
-    });
-  }
-});
   
+const discardCards = document.getElementById("discard-cards");
+
+if (discardCards) {
+  discardCards.replaceChildren();
+
+  game.discardPile.forEach((card, index) => {
+    const element = document.createElement("div");
+    element.className = "card";
+
+    if (card.color === "red") {
+      element.classList.add("red");
+    }
+
+    if (game.selectedDiscardIndex === index) {
+      element.classList.add("selected");
+    }
+
+    element.textContent = card.joker
+      ? "JOKER"
+      : `${card.label}${card.suit}`;
+
+    element.style.cursor = "pointer";
+
+    element.addEventListener("click", () => {
+      game.selectedDiscardIndex = index;
+
+      const allCards = discardCards.querySelectorAll(".card");
+
+      allCards.forEach(item => {
+        item.classList.remove("selected");
+      });
+
+      element.classList.add("selected");
+
+      console.log("Kartu Discard Pile dipilih:", index, card);
+    });
+
+    discardCards.appendChild(element);
+  });
+}
+
+
 console.log("Jumlah kartu setiap pemain:",
   window.remiGame.players.map(hand => hand.length));
 console.log("Sisa kartu di Draw Pile:",
   window.remiGame.drawPile.length);
+});
+
 
 </script>
   
