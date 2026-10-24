@@ -1016,15 +1016,25 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
 
     element.style.cursor = "pointer";
 
+    
     element.addEventListener("click", () => {
+      // Jika kartu yang sama diklik kembali, batalkan pilihan.
+      if (game.selectedDiscardIndex === index) {
+      game.selectedDiscardIndex = null;
+      element.classList.remove("selected");
+      return;
+      }
+  
+      // Pilih kartu yang baru diklik.
       game.selectedDiscardIndex = index;
-
+    
       discardCards.querySelectorAll(".card").forEach(item => {
         item.classList.remove("selected");
       });
-
-      element.classList.add("selected");
+  
+    element.classList.add("selected");
     });
+
 
     discardCards.appendChild(element);
   });
