@@ -486,70 +486,118 @@ function validateMeld(cards) {
 
   const jokers = cards.filter(card => card.joker);
   const normalCards = cards.filter(card => !card.joker);
+  const jokerCount = jokers.length;
 
-  // Seri angka: 2 sampai 10, simbol sama
-  if (
-    normalCards.length > 0 &&
-    normalCards.every(card => card.value >= 2 && card.value <= 10) &&
-    normalCards.every(card => card.suit === normalCards[0].suit)
-  ) {
-    const values = normalCards.map(card => card.value).sort((a, b) => a - b);
-    const uniqueValues = new Set(values);
+  // Seri angka 2–10 atau seri Raja J–K.
+  // Joker dapat mengisi kartu yang hilang, termasuk di tengah atau ujung.
+  function checkSeries(minValue, maxValue, type) {
+    if (normalCards.length === 0) return false;
 
-    if (uniqueValues.size === values.length) {
-      const min = values[0];
-      const max = values[values.length - 1];
+    const suit = normalCards[0].suit;
 
-      if (max - min + 1 === cards.length) {
-        return { valid: true, type: "Seri Angka", message: "Kombinasi sah." };
+    if (!normalCards.every(card =>
+      card.suit === suit &&
+      card.value >= minValue &&
+      card.value <= maxValue
+    )) {
+      return false;
+    }
+
+    const values = normalCards.map(card => card.value);
+
+    // Kartu asli dalam seri tidak boleh memiliki nilai berulang.
+    if (new Set(values).size !== values.length) {
+      return false;
+    }
+
+    const totalLength = cards.length;
+    const maxPossibleLength = maxValue - minValue + 1;
+
+    if (totalLength > maxPossibleLength) {
+      return false;
+    }
+
+    // Coba setiap kemungkinan posisi awal seri.
+    for (
+      let start = minValue;
+      start <= maxValue - totalLength + 1;
+      start++
+    ) {
+      const sequenceValues = Array.from(
+        { length: totalLength },
+        (_, index) => start + index
+      );
+
+      // Semua kartu asli harus cocok dengan urutan ini.
+      if (!values.every(value => sequenceValues.includes(value))) {
+        continue;
+      }
+
+      // Banyak kartu yang hilang harus sama dengan jumlah Joker.
+      const missingCount = sequenceValues.filter(
+        value => !values.includes(value)
+      ).length;
+
+      if (missingCount === jokerCount) {
+        return true;
       }
     }
+
+    return false;
   }
 
-  // Seri Raja: J, Q, K saja. As tidak diperbolehkan.
-  if (
-    normalCards.length > 0 &&
-    normalCards.every(card => card.value >= 11 && card.value <= 13) &&
-    normalCards.every(card => card.suit === normalCards[0].suit)
-  ) {
-    const values = normalCards.map(card => card.value).sort((a, b) => a - b);
-    const uniqueValues = new Set(values);
-
-    if (
-      uniqueValues.size === values.length &&
-      values[values.length - 1] - values[0] + 1 === cards.length
-    ) {
-      return { valid: true, type: "Seri Raja", message: "Kombinasi sah." };
-    }
+  if (checkSeries(2, 10, "Seri Angka")) {
+    return {
+      valid: true,
+      type: "Seri Angka",
+      message: "Kombinasi sah."
+    };
   }
 
-  // Seri As: tepat 4 kartu As
+  if (checkSeries(11, 13, "Seri Raja")) {
+    return {
+      valid: true,
+      type: "Seri Raja",
+      message: "Kombinasi sah."
+    };
+  }
+
+  // Seri As: harus tepat empat As dengan empat simbol berbeda.
   if (
     cards.length === 4 &&
-    normalCards.length === 4 &&
+    jokerCount === 0 &&
     normalCards.every(card => card.value === 14) &&
     new Set(normalCards.map(card => card.suit)).size === 4
   ) {
-    return { valid: true, type: "Seri As", message: "Kombinasi sah." };
+    return {
+      valid: true,
+      type: "Seri As",
+      message: "Kombinasi sah."
+    };
   }
 
-  // Tris: nilai sama, simbol berbeda
+  // Tris: nilai sama, simbol berbeda.
+  // Joker boleh menggantikan satu atau beberapa kartu yang hilang.
   if (
-    normalCards.length > 0 &&
+    normalCards.length >= 1 &&
+    normalCards.length <= 4 &&
     normalCards.every(card => card.value === normalCards[0].value) &&
     new Set(normalCards.map(card => card.suit)).size === normalCards.length &&
-    normalCards.length === cards.length
+    cards.length <= 4
   ) {
-    return { valid: true, type: "Tris", message: "Kombinasi sah." };
+    return {
+      valid: true,
+      type: "Tris",
+      message: "Kombinasi sah."
+    };
   }
 
   return {
     valid: false,
     type: null,
-    message: "Kombinasi tidak sah atau belum didukung."
+    message: "Kombinasi tidak sah."
   };
 }
-
 
 document.getElementById("open-meld-button").addEventListener("click", () => {
   const game = window.remiGame;
@@ -561,8 +609,11 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
   }
 
   const hand = game.players[0];
+
+  // Ambil kartu yang dipilih dari tangan pemain.
   const selectedCards = selectedIndices.map(index => hand[index]);
 
+  // Periksa apakah kombinasi sah.
   const result = validateMeld(selectedCards);
 
   if (!result.valid) {
@@ -570,7 +621,27 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
     return;
   }
 
-  alert(`Kombinasi sah: ${result.type}`);
+  // Simpan kombinasi terbuka milik pemain.
+  game.openMelds[0].push({
+    type: result.type,
+    cards: selectedCards
+  });
+
+  // Hapus kartu dari tangan, mulai dari indeks terbesar.
+  const indicesToRemove = [...selectedIndices].sort((a, b) => b - a);
+
+  indicesToRemove.forEach(index => {
+    hand.splice(index, 1);
+  });
+
+  // Kosongkan pilihan kartu.
+  game.selectedCardIndices = [];
+
+  // Perbarui tampilan.
+  renderPlayerHand();
+  renderOpenMelds();
+
+  alert(`Kombinasi berhasil dibuka: ${result.type}`);
 });  
   
 function renderPlayerHand() {
@@ -681,12 +752,12 @@ function renderOpenMelds() {
       meldElement.className = "meld";
 
       const title = document.createElement("small");
-      title.textContent = `Kombinasi ${meldIndex + 1}`;
+      title.textContent = meld.type || `Kombinasi ${meldIndex + 1}`;
 
       const cardsElement = document.createElement("div");
       cardsElement.className = "cards";
 
-      meld.forEach(card => {
+      meld.cards.forEach(card => {
         const cardElement = document.createElement("div");
         cardElement.className = "card";
 
@@ -694,9 +765,15 @@ function renderOpenMelds() {
           cardElement.classList.add("red");
         }
 
-        cardElement.textContent = card.joker
-          ? "JOKER"
-          : `${card.label}${card.suit}`;
+        if (card.joker) {
+          cardElement.classList.add("joker-card");
+          cardElement.classList.add(
+            card.jokerColor === "red" ? "joker-red" : "joker-black"
+          );
+          cardElement.textContent = "JOKER";
+        } else {
+          cardElement.textContent = `${card.label}${card.suit}`;
+        }
 
         cardsElement.appendChild(cardElement);
       });
