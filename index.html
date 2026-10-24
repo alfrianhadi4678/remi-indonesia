@@ -469,6 +469,7 @@ function dealCards(playerCount = 4) {
 window.remiGame = dealCards(4);
 window.remiGame.selectedCardIndices = [];
 window.remiGame.hasDrawn = false;
+window.remiGame.hasOpenedInitialSeries = false;
 
 window.remiGame.openMelds = Array.from(
   { length: window.remiGame.players.length },
