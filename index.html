@@ -939,19 +939,28 @@ if (discardCards) {
 
     element.style.cursor = "pointer";
 
+    
     element.addEventListener("click", () => {
-      game.selectedDiscardIndex = index;
-
-      const allCards = discardCards.querySelectorAll(".card");
-
-      allCards.forEach(item => {
+      // Klik kartu yang sedang dipilih untuk membatalkan pilihan.
+      if (game.selectedDiscardIndex === index) {
+      game.selectedDiscardIndex = null;
+      element.classList.remove("selected");
+  
+      console.log("Pilihan kartu Discard Pile dibatalkan.");
+      return;
+      }
+  
+      // Hapus tanda pilihan dari semua kartu.
+      discardCards.querySelectorAll(".card").forEach(item => {
         item.classList.remove("selected");
       });
-
+  
+      // Pilih kartu yang baru diklik.
+      game.selectedDiscardIndex = index;
       element.classList.add("selected");
-
+    
       console.log("Kartu Discard Pile dipilih:", index, card);
-    });
+  });
 
     discardCards.appendChild(element);
   });
