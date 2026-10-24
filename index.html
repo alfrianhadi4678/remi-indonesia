@@ -707,7 +707,7 @@ function renderPlayerHand() {
     return;
   }
 
-  const hand = window.remiGame.players[0];
+  const hand = game.players[game.currentPlayer];
 
   titleElement.textContent = `Kartu Anda · ${hand.length} kartu`;
   handElement.replaceChildren();
@@ -900,7 +900,7 @@ document.getElementById("draw-button").addEventListener("click", () => {
     return;
   }
 
-  game.players[0].push(game.drawPile.pop());
+  game.players[game.currentPlayer].push(game.drawPile.pop());
   game.hasDrawn = true;
   game.selectedCardIndices = [];
 
