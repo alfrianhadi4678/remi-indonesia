@@ -908,7 +908,8 @@ document.getElementById("discard-button").addEventListener("click", () => {
 
   game.discardPile.push(discarded);
   game.selectedCardIndices = [];
-  game.hasDrawn = false;
+  
+  // Status pengambilan kartu tidak direset di sini.
 
   renderPlayerHand();
   updatePileCounts();
