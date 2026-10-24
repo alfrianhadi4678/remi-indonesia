@@ -990,17 +990,20 @@ if (discardCards) {
       element.classList.add("selected");
     
       console.log("Kartu Discard Pile dipilih:", index, card);
+      
   });
 
+    
     discardCards.appendChild(element);
   });
 }
-
 
 console.log("Jumlah kartu setiap pemain:",
   window.remiGame.players.map(hand => hand.length));
 console.log("Sisa kartu di Draw Pile:",
   window.remiGame.drawPile.length);
+
+nextTurn();
 });
 
 
