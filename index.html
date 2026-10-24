@@ -695,6 +695,7 @@ function renderPlayerHand() {
     return;
   }
 
+  const game = window.remiGame;
   const hand = game.players[game.currentPlayer];
 
   titleElement.textContent = `Kartu Anda · ${hand.length} kartu`;
