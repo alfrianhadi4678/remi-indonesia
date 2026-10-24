@@ -342,7 +342,7 @@
 
       <section class="panel">
         <h3>Giliran saat ini</h3>
-        <p>🟢 Giliran Anda</p>
+        <p id="turn-indicator">🟢 Giliran Anda</p>
         <button id="draw-button">AMBIL DARI DRAW PILE</button>
         <button id="eat-discard-button">AMBIL DARI DISCARD PILE</button>
         <button class="discard" id="discard-button">BUANG KARTU</button>
@@ -470,6 +470,36 @@ function dealCards(playerCount = 4) {
 window.remiGame = dealCards(4);
 window.remiGame.selectedCardIndices = [];
 window.remiGame.hasDrawn = false;
+
+window.remiGame.currentPlayer = 0;
+window.remiGame.turnNumber = 1;
+
+function updateTurnIndicator() {
+  const game = window.remiGame;
+  const indicator = document.getElementById("turn-indicator");
+
+  if (!indicator) return;
+
+  indicator.textContent = game.currentPlayer === 0
+    ? `🟢 Giliran Anda · Giliran ${game.turnNumber}`
+    : `⏳ Giliran Pemain ${game.currentPlayer + 1} · Giliran ${game.turnNumber}`;
+}
+
+function nextTurn() {
+  const game = window.remiGame;
+
+  game.currentPlayer =
+    (game.currentPlayer + 1) % game.players.length;
+
+  game.turnNumber++;
+  game.hasDrawn = false;
+  game.selectedCardIndices = [];
+  game.selectedDiscardIndex = null;
+
+  updateTurnIndicator();
+  renderPlayerHand();
+}
+  
 window.remiGame.hasOpenedInitialSeries = false;
 window.remiGame.selectedDiscardIndex = null;
 
