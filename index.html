@@ -345,7 +345,7 @@
         <p>🟢 Giliran Anda</p>
         <button id="draw-button">AMBIL / MAKAN</button>
         <button class="discard" id="discard-button">BUANG KARTU</button>
-        <button id="open-meld-button">BUKA KOMBINASI</button>
+        <button id="">BUKA KOMBINASI</button>
       </section>
 
 
@@ -848,7 +848,7 @@ document.getElementById("draw-button").addEventListener("click", () => {
 
   game.players[0].push(game.drawPile.pop());
   game.hasDrawn = true;
-  game.selectedCardIndex = null;
+  game.selectedCardIndices = [];
 
   renderPlayerHand();
   updatePileCounts();
