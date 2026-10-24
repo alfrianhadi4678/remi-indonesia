@@ -897,6 +897,13 @@ document.getElementById("discard-button").addEventListener("click", () => {
     game.selectedCardIndices.length - 1
   ];
 
+  const selectedCard = hand[selectedIndex];
+
+  if (selectedCard.joker) {
+  alert("Joker tidak boleh dibuang ke Discard Pile.");
+  return;
+  }
+
   const discarded = hand.splice(selectedIndex, 1)[0];
 
   game.discardPile.push(discarded);
