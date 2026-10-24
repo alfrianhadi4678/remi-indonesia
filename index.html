@@ -600,9 +600,16 @@ function validateMeld(cards) {
   };
 }
 
+
 document.getElementById("open-meld-button").addEventListener("click", () => {
   const game = window.remiGame;
   const selectedIndices = game.selectedCardIndices;
+
+  // Pemain harus mengambil kartu terlebih dahulu.
+  if (!game.hasDrawn) {
+    alert("Ambil kartu terlebih dahulu sebelum membuka kombinasi.");
+    return;
+  }
 
   if (selectedIndices.length < 3) {
     alert("Pilih minimal 3 kartu untuk membuka kombinasi.");
@@ -610,11 +617,9 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
   }
 
   const hand = game.players[0];
-
-  // Ambil kartu yang dipilih dari tangan pemain.
   const selectedCards = selectedIndices.map(index => hand[index]);
 
-  // Periksa apakah kombinasi sah.
+  // Periksa keabsahan kombinasi.
   const result = validateMeld(selectedCards);
 
   if (!result.valid) {
@@ -622,11 +627,27 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
     return;
   }
 
-  // Simpan kombinasi terbuka milik pemain.
+  // Sebelum Seri awal, Tris tidak boleh dibuka.
+  const isInitialSeries =
+    result.type === "Seri Angka" ||
+    result.type === "Seri Raja" ||
+    result.type === "Seri As";
+
+  if (!game.hasOpenedInitialSeries && !isInitialSeries) {
+    alert("Kamu harus membuka Seri awal terlebih dahulu. Tris belum boleh dibuka.");
+    return;
+  }
+
+  // Simpan kombinasi terbuka.
   game.openMelds[0].push({
     type: result.type,
     cards: selectedCards
   });
+
+  // Catat bahwa Seri awal telah dibuka.
+  if (isInitialSeries) {
+    game.hasOpenedInitialSeries = true;
+  }
 
   // Hapus kartu dari tangan, mulai dari indeks terbesar.
   const indicesToRemove = [...selectedIndices].sort((a, b) => b - a);
@@ -635,15 +656,13 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
     hand.splice(index, 1);
   });
 
-  // Kosongkan pilihan kartu.
   game.selectedCardIndices = [];
 
-  // Perbarui tampilan.
   renderPlayerHand();
   renderOpenMelds();
 
   alert(`Kombinasi berhasil dibuka: ${result.type}`);
-});  
+});
   
 function renderPlayerHand() {
   const handElement = document.getElementById("player-hand");
