@@ -263,6 +263,31 @@
   </style>
 </head>
 <body>
+
+<!-- MENU DEVELOP DAN LIVE -->
+  <div id="mode-menu" style="
+    padding: 14px;
+    background: #17251f;
+    border-bottom: 2px solid #b99752;
+    text-align: center;
+  ">
+    <strong style="display:block; margin-bottom:10px;">
+      MODE PERMAINAN
+    </strong>
+
+    <button type="button" onclick="setGameMode('develop')">
+      Develop Mode
+    </button>
+
+    <button type="button" onclick="setGameMode('live')">
+      Live Mode
+    </button>
+
+    <p id="mode-description" style="margin:10px 0 0; color:#c6d5cc;">
+      Pilih mode permainan.
+    </p>
+  </div>
+  
   <header>
     <h1>♠ Remi Indonesia ♥</h1>
     <p>Permainan kartu multiplayer · 2–4 pemain</p>
@@ -1103,5 +1128,28 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
 });
 
 </script>
+
+<script>
+  window.gameMode = "develop";
+
+  function setGameMode(mode) {
+    window.gameMode = mode;
+
+    const description = document.getElementById("mode-description");
+
+    if (mode === "develop") {
+      description.textContent =
+        "Develop Mode: persiapan untuk pengujian kartu dan aturan.";
+    } else {
+      description.textContent =
+        "Live Mode: tampilan permainan normal.";
+    }
+
+    console.log("Mode permainan:", window.gameMode);
+  }
+
+  setGameMode("develop");
+</script>
+  
 </body>
 </html>
