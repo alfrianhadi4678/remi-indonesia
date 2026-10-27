@@ -884,6 +884,7 @@ function renderOpenMelds() {
 
 function renderOpponentHands() {
   const game = window.remiGame;
+  const isDevelopMode = window.gameMode === "develop";
 
   for (let playerIndex = 1; playerIndex < game.players.length; playerIndex++) {
     const handElement = document.getElementById(
@@ -896,11 +897,29 @@ function renderOpponentHands() {
 
     const hand = game.players[playerIndex];
 
-    hand.forEach(() => {
+    hand.forEach((card) => {
       const cardElement = document.createElement("div");
 
-      cardElement.className = "back";
-      cardElement.textContent = "✦";
+      if (isDevelopMode) {
+        // Develop Mode: tampilkan wajah kartu sebenarnya.
+        cardElement.className = "card";
+
+        const suitSymbols = {
+          hearts: "♥",
+          diamonds: "♦",
+          clubs: "♣",
+          spades: "♠"
+        };
+
+        const suitSymbol = suitSymbols[card.suit] || card.suit || "";
+        const rank = card.rank ?? card.value ?? "?";
+
+        cardElement.textContent = `${rank}${suitSymbol}`;
+      } else {
+        // Live Mode: kartu lawan tetap tertutup.
+        cardElement.className = "back";
+        cardElement.textContent = "✦";
+      }
 
       handElement.appendChild(cardElement);
     });
