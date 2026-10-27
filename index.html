@@ -857,6 +857,31 @@ function renderOpenMelds() {
   });
 }
 
+function renderOpponentHands() {
+  const game = window.remiGame;
+
+  for (let playerIndex = 1; playerIndex < game.players.length; playerIndex++) {
+    const handElement = document.getElementById(
+      `player-${playerIndex}-hand`
+    );
+
+    if (!handElement) continue;
+
+    handElement.replaceChildren();
+
+    const hand = game.players[playerIndex];
+
+    hand.forEach(() => {
+      const cardElement = document.createElement("div");
+
+      cardElement.className = "back";
+      cardElement.textContent = "✦";
+
+      handElement.appendChild(cardElement);
+    });
+  }
+}  
+  
 renderPlayerHand();
 renderOpenMelds();
 console.log("Remi Indonesia siap.");
