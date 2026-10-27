@@ -884,7 +884,6 @@ function renderOpenMelds() {
 
 function renderOpponentHands() {
   const game = window.remiGame;
-  const isDevelopMode = window.gameMode === "develop";
 
   for (let playerIndex = 1; playerIndex < game.players.length; playerIndex++) {
     const handElement = document.getElementById(
@@ -900,23 +899,25 @@ function renderOpponentHands() {
     hand.forEach((card) => {
       const cardElement = document.createElement("div");
 
-      if (isDevelopMode) {
-        // Develop Mode: tampilkan wajah kartu sebenarnya.
+      if (window.gameMode === "develop") {
+        // Develop Mode: tampilkan identitas kartu.
         cardElement.className = "card";
 
-        const suitSymbols = {
-          hearts: "♥",
-          diamonds: "♦",
-          clubs: "♣",
-          spades: "♠"
-        };
+        if (card.color === "red") {
+          cardElement.classList.add("red");
+        }
 
-        const suitSymbol = suitSymbols[card.suit] || card.suit || "";
-        const rank = card.rank ?? card.value ?? "?";
-
-        cardElement.textContent = `${rank}${suitSymbol}`;
+        if (card.joker) {
+          cardElement.classList.add("joker-card");
+          cardElement.classList.add(
+            card.jokerColor === "red" ? "joker-red" : "joker-black"
+          );
+          cardElement.textContent = "JOKER";
+        } else {
+          cardElement.textContent = `${card.label}${card.suit}`;
+        }
       } else {
-        // Live Mode: kartu lawan tetap tertutup.
+        // Live Mode: sembunyikan identitas kartu lawan.
         cardElement.className = "back";
         cardElement.textContent = "✦";
       }
