@@ -1151,21 +1151,26 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
 <script>
   window.gameMode = "develop";
 
-  function setGameMode(mode) {
-    window.gameMode = mode;
+function setGameMode(mode) {
+  window.gameMode = mode;
 
-    const description = document.getElementById("mode-description");
+  const description = document.getElementById("mode-description");
 
-    if (mode === "develop") {
-      description.textContent =
-        "Develop Mode: persiapan untuk pengujian kartu dan aturan.";
-    } else {
-      description.textContent =
-        "Live Mode: tampilan permainan normal.";
-    }
-
-    console.log("Mode permainan:", window.gameMode);
+  if (mode === "develop") {
+    description.textContent =
+      "Develop Mode: persiapan untuk pengujian kartu dan aturan.";
+  } else {
+    description.textContent =
+      "Live Mode: tampilan permainan normal.";
   }
+
+  // Perbarui tampilan kartu lawan sesuai mode.
+  if (typeof renderOpponentHands === "function") {
+    renderOpponentHands();
+  }
+
+  console.log("Mode permainan:", window.gameMode);
+}
 
   setGameMode("develop");
 </script>
