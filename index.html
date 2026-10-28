@@ -712,6 +712,7 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
   alert(`Kombinasi berhasil dibuka: ${result.type}`);
 });
   
+
 function renderPlayerHand() {
   const handElement = document.getElementById("player-hand");
   const titleElement = document.getElementById("hand-title");
@@ -722,41 +723,44 @@ function renderPlayerHand() {
   }
 
   const game = window.remiGame;
-  const hand = game.players[game.currentPlayer];
+
+  // Area "Kartu Anda" khusus untuk pemain pertama (indeks 0).
+  const hand = game.players[0];
 
   titleElement.textContent = `Kartu Anda · ${hand.length} kartu`;
   handElement.replaceChildren();
 
   hand.forEach((card, index) => {
     const element = document.createElement("div");
-    element.className = "card";
-    
-    element.classList.add("selectable");
+    element.className = "card selectable";
 
-    if (window.remiGame.selectedCardIndices.includes(index)) {
-    element.classList.add("selected");
-}
-
-    element.addEventListener("click", () => {
-    const selected = window.remiGame.selectedCardIndices;
-    const selectedPosition = selected.indexOf(index);
-
-    if (selectedPosition === -1) {
-    selected.push(index);
-    } else {
-    selected.splice(selectedPosition, 1);
+    if (game.selectedCardIndices.includes(index)) {
+      element.classList.add("selected");
     }
 
-    renderPlayerHand();
-});
+    element.addEventListener("click", () => {
+      // Untuk sementara, pemilihan kartu hanya berlaku
+      // bagi pemain yang memiliki area "Kartu Anda".
+      if (game.currentPlayer !== 0) {
+        return;
+      }
 
+      const selected = game.selectedCardIndices;
+      const selectedPosition = selected.indexOf(index);
 
+      if (selectedPosition === -1) {
+        selected.push(index);
+      } else {
+        selected.splice(selectedPosition, 1);
+      }
+
+      renderPlayerHand();
+    });
 
     if (card.color === "red") {
       element.classList.add("red");
     }
 
-    
     if (card.joker) {
       element.classList.add("joker-card");
       element.classList.add(
@@ -798,9 +802,9 @@ function renderPlayerHand() {
     }
 
     handElement.appendChild(element);
-
   });
 }
+
 
 function renderOpenMelds() {
   const game = window.remiGame;
@@ -966,6 +970,7 @@ document.getElementById("draw-button").addEventListener("click", () => {
   game.selectedCardIndices = [];
 
   renderPlayerHand();
+  renderOpponentHands();
   updatePileCounts();
 });
 
