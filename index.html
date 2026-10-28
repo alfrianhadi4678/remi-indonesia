@@ -983,7 +983,7 @@ document.getElementById("discard-button").addEventListener("click", () => {
   return;
 }
 
-  const hand = game.players[0];
+  const hand = game.players[game.currentPlayer];
 
   // Buang satu kartu yang terakhir dipilih
   const selectedIndex = game.selectedCardIndices[
