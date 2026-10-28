@@ -887,6 +887,7 @@ function renderOpenMelds() {
   });
 }
 
+
 function renderOpponentHands() {
   const game = window.remiGame;
 
@@ -901,11 +902,10 @@ function renderOpponentHands() {
 
     const hand = game.players[playerIndex];
 
-    hand.forEach((card) => {
+    hand.forEach((card, cardIndex) => {
       const cardElement = document.createElement("div");
 
       if (window.gameMode === "develop") {
-        // Develop Mode: tampilkan identitas kartu.
         cardElement.className = "card";
 
         if (card.color === "red") {
@@ -921,8 +921,33 @@ function renderOpponentHands() {
         } else {
           cardElement.textContent = `${card.label}${card.suit}`;
         }
+
+        cardElement.classList.add("selectable");
+
+        if (
+          game.currentPlayer === playerIndex &&
+          game.selectedCardIndices.includes(cardIndex)
+        ) {
+          cardElement.classList.add("selected");
+        }
+
+        cardElement.addEventListener("click", () => {
+          if (game.currentPlayer !== playerIndex) {
+            return;
+          }
+
+          const selected = game.selectedCardIndices;
+          const selectedPosition = selected.indexOf(cardIndex);
+
+          if (selectedPosition === -1) {
+            selected.push(cardIndex);
+          } else {
+            selected.splice(selectedPosition, 1);
+          }
+
+          renderOpponentHands();
+        });
       } else {
-        // Live Mode: sembunyikan identitas kartu lawan.
         cardElement.className = "back";
         cardElement.textContent = "✦";
       }
@@ -930,7 +955,8 @@ function renderOpponentHands() {
       handElement.appendChild(cardElement);
     });
   }
-}  
+}
+  
   
 renderPlayerHand();
 renderOpponentHands();
