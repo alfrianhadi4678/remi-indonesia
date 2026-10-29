@@ -531,6 +531,9 @@ window.remiGame.openMelds = Array.from(
   () => []
 );
 
+renderDiscardPile();
+updatePileCounts();
+
 function validateMeld(cards) {
   if (!Array.isArray(cards) || cards.length < 3) {
     return {
@@ -994,6 +997,94 @@ function updatePileCounts() {
   }
 }
 
+
+function renderDiscardPile() {
+  const game = window.remiGame;
+  const discardCards = document.getElementById("discard-cards");
+
+  if (!discardCards) return;
+
+  // Simpan hanya pilihan yang indeksnya masih valid.
+  if (!Array.isArray(game.selectedDiscardIndices)) {
+    game.selectedDiscardIndices = [];
+  }
+
+  game.selectedDiscardIndices = game.selectedDiscardIndices.filter(index =>
+    Number.isInteger(index) &&
+    index >= Math.max(0, game.discardPile.length - 7) &&
+    index < game.discardPile.length
+  );
+
+  // Sinkronkan variabel lama dengan daftar pilihan baru.
+  game.selectedDiscardIndex =
+    game.selectedDiscardIndices.length === 1
+      ? game.selectedDiscardIndices[0]
+      : null;
+
+  discardCards.replaceChildren();
+
+  game.discardPile.forEach((card, index) => {
+    const element = document.createElement("div");
+    element.className = "card";
+    element.dataset.discardIndex = index;
+
+    if (card.color === "red") {
+      element.classList.add("red");
+    }
+
+    element.textContent = card.joker
+      ? "JOKER"
+      : `${card.label}${card.suit}`;
+
+    element.style.cursor = "pointer";
+
+    // Pertahankan indikator pilihan ketika Discard Pile digambar ulang.
+    if (game.selectedDiscardIndices.includes(index)) {
+      element.classList.add("selected");
+    }
+
+    element.addEventListener("click", () => {
+      if (game.hasDrawn) return;
+
+      const batasBawah = Math.max(0, game.discardPile.length - 7);
+
+      if (index < batasBawah) {
+        alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
+        return;
+      }
+
+      const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
+
+      if (posisiPilihan !== -1) {
+        game.selectedDiscardIndices.splice(posisiPilihan, 1);
+      } else {
+        if (game.selectedDiscardIndices.length >= 2) {
+          alert("Maksimal pilih 2 kartu Discard Pile.");
+          return;
+        }
+
+        game.selectedDiscardIndices.push(index);
+      }
+
+      game.selectedDiscardIndex =
+        game.selectedDiscardIndices.length === 1
+          ? game.selectedDiscardIndices[0]
+          : null;
+
+      // Gambar ulang agar semua kartu pilihan mendapat indikator.
+      renderDiscardPile();
+
+      console.log(
+        "Kartu Discard Pile yang dipilih:",
+        game.selectedDiscardIndices
+      );
+    });
+
+    discardCards.appendChild(element);
+  });
+}
+
+
 document.getElementById("draw-button").addEventListener("click", () => {
   const game = window.remiGame;
 
@@ -1053,99 +1144,10 @@ document.getElementById("discard-button").addEventListener("click", () => {
   // Status pengambilan kartu tidak direset di sini.
 
   renderPlayerHand();
+  renderDiscardPile();
   updatePileCounts();
 
-  
-const discardCards = document.getElementById("discard-cards");
-
-if (discardCards) {
-  discardCards.replaceChildren();
-
-  game.discardPile.forEach((card, index) => {
-    const element = document.createElement("div");
-    element.className = "card";
-
-    if (card.color === "red") {
-      element.classList.add("red");
-    }
-
-    if (game.selectedDiscardIndex === index) {
-      element.classList.add("selected");
-    }
-
-    element.textContent = card.joker
-      ? "JOKER"
-      : `${card.label}${card.suit}`;
-
-    element.style.cursor = "pointer";
-
-element.addEventListener("click", () => {
-  // Pastikan daftar pilihan kartu tersedia.
-  if (!Array.isArray(game.selectedDiscardIndices)) {
-    game.selectedDiscardIndices = [];
-  }
-
-  // Abaikan kartu yang berada di luar 7 kartu teratas.
-  const batasBawah = Math.max(0, game.discardPile.length - 7);
-
-  if (index < batasBawah) {
-    alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
-    return;
-  }
-
-  // Jika kartu yang sama diklik lagi, batalkan pilihannya.
-  const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
-
-  if (posisiPilihan !== -1) {
-    game.selectedDiscardIndices.splice(posisiPilihan, 1);
-  } else {
-    // Maksimal 2 kartu target untuk mendukung Seri As.
-    if (game.selectedDiscardIndices.length >= 2) {
-      alert("Maksimal pilih 2 kartu Discard Pile.");
-      return;
-    }
-
-    game.selectedDiscardIndices.push(index);
-  }
-
-  // Perbarui penanda visual seluruh kartu.
-  discardCards.querySelectorAll(".card").forEach(item => {
-    item.classList.remove("selected");
-  });
-
-  game.selectedDiscardIndices.forEach(selectedIndex => {
-    const selectedElement = discardCards.querySelector(
-      `.card[data-discard-index="${selectedIndex}"]`
-    );
-
-    if (selectedElement) {
-      selectedElement.classList.add("selected");
-    }
-  });
-
-  // Pertahankan variabel lama agar bagian kode lain tidak langsung rusak.
-  game.selectedDiscardIndex =
-    game.selectedDiscardIndices.length === 1
-      ? game.selectedDiscardIndices[0]
-      : null;
-
-  console.log(
-    "Kartu Discard Pile yang dipilih:",
-    game.selectedDiscardIndices
-  );
-});
-
-    
-    discardCards.appendChild(element);
-  });
-}
-
-console.log("Jumlah kartu setiap pemain:",
-  window.remiGame.players.map(hand => hand.length));
-console.log("Sisa kartu di Draw Pile:",
-  window.remiGame.drawPile.length);
-
-nextTurn();
+  nextTurn();
 });
 
 
@@ -1159,19 +1161,20 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
     return;
   }
 
-  // Gunakan daftar pilihan baru.
-  const targetIndices = Array.isArray(game.selectedDiscardIndices)
-    ? [...game.selectedDiscardIndices].sort((a, b) => a - b)
-    : (
-        game.selectedDiscardIndex !== null
-          ? [game.selectedDiscardIndex]
-          : []
-      );
-
-  if (targetIndices.length < 1 || targetIndices.length > 2) {
-    alert("Pilih satu kartu sasaran, atau dua kartu As untuk Seri As.");
-    return;
+  // Gunakan daftar pilihan baru jika berisi kartu.
+  // Jika kosong, periksa pilihan lama sebagai cadangan.
+  let targetIndices = [];
+  
+  if (
+    Array.isArray(game.selectedDiscardIndices) &&
+    game.selectedDiscardIndices.length > 0
+  ) {
+    targetIndices = [...game.selectedDiscardIndices];
+  } else if (Number.isInteger(game.selectedDiscardIndex)) {
+    targetIndices = [game.selectedDiscardIndex];
   }
+
+targetIndices.sort((a, b) => a - b);
 
   const discardLength = game.discardPile.length;
   const earliestAllowedIndex = Math.max(0, discardLength - 7);
@@ -1208,11 +1211,20 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
   const selectedCards = selectedIndices.map(index => hand[index]);
   const targetCards = targetIndices.map(index => game.discardPile[index]);
 
+  // Joker tidak boleh digunakan untuk makan kartu.
+  if (
+    selectedCards.some(card => card.joker) ||
+    targetCards.some(card => card.joker)
+  ) {
+    alert("Joker tidak boleh digunakan untuk makan kartu.");
+    return;
+  }
+
   // Dua kartu sasaran hanya diperbolehkan untuk Seri As.
   if (targetCards.length === 2) {
     const allAces = [...selectedCards, ...targetCards].every(card =>
-      !card.joker && card.value === 1
-    );
+    !card.joker && card.value === 14
+  );
 
     if (!allAces || selectedCards.length !== 2) {
       alert(
@@ -1283,79 +1295,8 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
   renderOpponentHands();
   renderOpenMelds();
 
-  // Gambar ulang Discard Pile.
-  const discardCards = document.getElementById("discard-cards");
-  discardCards.replaceChildren();
-
-  game.discardPile.forEach((card, index) => {
-    const element = document.createElement("div");
-    element.className = "card";
-    element.dataset.discardIndex = index;
-
-    if (card.color === "red") {
-      element.classList.add("red");
-    }
-
-    element.textContent = card.joker
-      ? "JOKER"
-      : `${card.label}${card.suit}`;
-
-    element.style.cursor = "pointer";
-
-    element.addEventListener("click", () => {
-      if (game.hasDrawn) return;
-
-      if (!Array.isArray(game.selectedDiscardIndices)) {
-        game.selectedDiscardIndices = [];
-      }
-
-      const batasBawah = Math.max(0, game.discardPile.length - 7);
-
-      if (index < batasBawah) {
-        alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
-        return;
-      }
-
-      const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
-
-      if (posisiPilihan !== -1) {
-        game.selectedDiscardIndices.splice(posisiPilihan, 1);
-      } else {
-        if (game.selectedDiscardIndices.length >= 2) {
-          alert("Maksimal pilih 2 kartu Discard Pile.");
-          return;
-        }
-
-        game.selectedDiscardIndices.push(index);
-      }
-
-      discardCards.querySelectorAll(".card").forEach(item => {
-        item.classList.remove("selected");
-      });
-
-      game.selectedDiscardIndices.forEach(selectedIndex => {
-        const selectedElement = discardCards.querySelector(
-          `.card[data-discard-index="${selectedIndex}"]`
-        );
-
-        if (selectedElement) {
-          selectedElement.classList.add("selected");
-        }
-      });
-
-      game.selectedDiscardIndex =
-        game.selectedDiscardIndices.length === 1
-          ? game.selectedDiscardIndices[0]
-          : null;
-
-      console.log(
-        "Kartu Discard Pile yang dipilih:",
-        game.selectedDiscardIndices
-      );
-    });
-
-    discardCards.appendChild(element);
-  });
+  // Gambar ulang Discard Pile menggunakan fungsi bersama.
+  renderDiscardPile();
 
   updatePileCounts();
 
