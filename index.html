@@ -1045,7 +1045,9 @@ function renderDiscardPile() {
     }
 
     element.addEventListener("click", () => {
-      if (game.hasDrawn) return;
+      if (game.hasDrawn || game.hasEatenThisTurn) {
+      return;
+    }
 
       const batasBawah = Math.max(0, game.discardPile.length - 7);
 
@@ -1089,9 +1091,9 @@ function renderDiscardPile() {
 document.getElementById("draw-button").addEventListener("click", () => {
   const game = window.remiGame;
 
-  if (game.hasDrawn) {
-    alert("Kamu sudah mengambil kartu pada giliran ini.");
-    return;
+  if (game.hasDrawn || game.hasEatenThisTurn) {
+  alert("Kamu sudah mengambil kartu pada giliran ini, baik dari Draw Pile maupun Discard Pile.");
+  return;
   }
 
   if (game.drawPile.length === 0) {
@@ -1157,9 +1159,14 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
   const playerIndex = game.currentPlayer;
   const hand = game.players[playerIndex];
 
+  if (game.hasEatenThisTurn) {
+  alert("Kamu sudah makan dari Discard Pile pada giliran ini.");
+  return;
+  }
+
   if (game.hasDrawn) {
-    alert("Kamu sudah mengambil kartu pada giliran ini.");
-    return;
+  alert("Kamu sudah mengambil kartu dari Draw Pile pada giliran ini.");
+  return;
   }
 
   // Gunakan daftar pilihan baru jika berisi kartu.
@@ -1176,6 +1183,11 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
   }
 
 targetIndices.sort((a, b) => a - b);
+  
+  if (targetIndices.length < 1 || targetIndices.length > 2) {
+  alert("Pilih satu kartu sasaran, atau dua kartu As untuk Seri As.");
+  return;
+  }
 
   const discardLength = game.discardPile.length;
   const earliestAllowedIndex = Math.max(0, discardLength - 7);
@@ -1246,6 +1258,23 @@ targetIndices.sort((a, b) => a - b);
     return;
   }
 
+  const firstTargetIndex = targetIndices[0];
+  const targetCardSet = new Set(targetCards);
+
+  const additionalCards = game.discardPile
+  .slice(firstTargetIndex)
+  .filter(card => !targetCardSet.has(card));
+
+  const remainingHandCount =
+  hand.length - selectedIndices.length + additionalCards.length;
+
+  if (remainingHandCount < 1) {
+  alert(
+    "Makan tidak bisa dilakukan karena kamu harus menyisakan minimal satu kartu untuk dibuang."
+  );
+  return;
+  }
+
   const isInitialSeries =
     result.type === "Seri Angka" ||
     result.type === "Seri Raja" ||
@@ -1290,7 +1319,7 @@ targetIndices.sort((a, b) => a - b);
   game.selectedCardIndices = [];
   game.selectedDiscardIndices = [];
   game.selectedDiscardIndex = null;
-  game.hasDrawn = true;
+  game.hasEatenThisTurn = true;
 
   renderPlayerHand();
   renderOpponentHands();
