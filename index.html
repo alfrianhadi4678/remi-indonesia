@@ -1076,29 +1076,61 @@ if (discardCards) {
 
     element.style.cursor = "pointer";
 
-    
-    element.addEventListener("click", () => {
-      // Klik kartu yang sedang dipilih untuk membatalkan pilihan.
-      if (game.selectedDiscardIndex === index) {
-      game.selectedDiscardIndex = null;
-      element.classList.remove("selected");
-  
-      console.log("Pilihan kartu Discard Pile dibatalkan.");
+element.addEventListener("click", () => {
+  // Pastikan daftar pilihan kartu tersedia.
+  if (!Array.isArray(game.selectedDiscardIndices)) {
+    game.selectedDiscardIndices = [];
+  }
+
+  // Abaikan kartu yang berada di luar 7 kartu teratas.
+  const batasBawah = Math.max(0, game.discardPile.length - 7);
+
+  if (index < batasBawah) {
+    alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
+    return;
+  }
+
+  // Jika kartu yang sama diklik lagi, batalkan pilihannya.
+  const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
+
+  if (posisiPilihan !== -1) {
+    game.selectedDiscardIndices.splice(posisiPilihan, 1);
+  } else {
+    // Maksimal 2 kartu target untuk mendukung Seri As.
+    if (game.selectedDiscardIndices.length >= 2) {
+      alert("Maksimal pilih 2 kartu Discard Pile.");
       return;
-      }
-  
-      // Hapus tanda pilihan dari semua kartu.
-      discardCards.querySelectorAll(".card").forEach(item => {
-        item.classList.remove("selected");
-      });
-  
-      // Pilih kartu yang baru diklik.
-      game.selectedDiscardIndex = index;
-      element.classList.add("selected");
-    
-      console.log("Kartu Discard Pile dipilih:", index, card);
-      
+    }
+
+    game.selectedDiscardIndices.push(index);
+  }
+
+  // Perbarui penanda visual seluruh kartu.
+  discardCards.querySelectorAll(".card").forEach(item => {
+    item.classList.remove("selected");
   });
+
+  game.selectedDiscardIndices.forEach(selectedIndex => {
+    const selectedElement = discardCards.querySelector(
+      `.card[data-discard-index="${selectedIndex}"]`
+    );
+
+    if (selectedElement) {
+      selectedElement.classList.add("selected");
+    }
+  });
+
+  // Pertahankan variabel lama agar bagian kode lain tidak langsung rusak.
+  game.selectedDiscardIndex =
+    game.selectedDiscardIndices.length === 1
+      ? game.selectedDiscardIndices[0]
+      : null;
+
+  console.log(
+    "Kartu Discard Pile yang dipilih:",
+    game.selectedDiscardIndices
+  );
+});
 
     
     discardCards.appendChild(element);
@@ -1225,10 +1257,12 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
   // Gambar ulang Discard Pile tanpa mengubah urutan kartu yang tersisa.
   const discardCards = document.getElementById("discard-cards");
   discardCards.replaceChildren();
-
+  
   game.discardPile.forEach((card, index) => {
-    const element = document.createElement("div");
-    element.className = "card";
+  const element = document.createElement("div");
+  element.className = "card";
+  element.dataset.discardIndex = index;
+
 
     if (card.color === "red") {
       element.classList.add("red");
