@@ -483,6 +483,7 @@ function dealCards(playerCount = 4) {
 window.remiGame = dealCards(4);
 window.remiGame.selectedCardIndices = [];
 window.remiGame.hasDrawn = false;
+window.remiGame.hasEatenThisTurn = false;
 
 window.remiGame.currentPlayer = 0;
 window.remiGame.turnNumber = 1;
@@ -506,6 +507,7 @@ function nextTurn() {
 
   game.turnNumber++;
   game.hasDrawn = false;
+  game.hasEatenThisTurn = false;
   game.selectedCardIndices = [];
   game.selectedDiscardIndex = null;
   game.selectedDiscardIndices = [];
