@@ -656,29 +656,30 @@ function validateMeld(cards) {
 }
 
 
+
 document.getElementById("open-meld-button").addEventListener("click", () => {
   const game = window.remiGame;
   const playerIndex = game.currentPlayer;
-  const selectedIndices = game.selectedCardIndices;
   const hand = game.players[playerIndex];
+  const selectedIndices = [...game.selectedCardIndices];
 
-  if (!game.hasDrawn) {
-    alert("Ambil kartu terlebih dahulu sebelum membuka kombinasi.");
-    return;
-  }
-
+  // Membuka kombinasi tidak mewajibkan Draw terlebih dahulu.
   if (selectedIndices.length < 3) {
     alert("Pilih minimal 3 kartu untuk membuka kombinasi.");
     return;
   }
 
-  const selectedCards = selectedIndices.map(index => hand[index]);
-
-  if (selectedCards.some(card => !card)) {
-    alert("Pilihan kartu tidak valid. Pilih ulang kartu yang ingin dibuka.");
+  if (
+    new Set(selectedIndices).size !== selectedIndices.length ||
+    selectedIndices.some(index =>
+      !Number.isInteger(index) || index < 0 || index >= hand.length
+    )
+  ) {
+    alert("Pilihan kartu tidak valid. Pilih ulang kartu.");
     return;
   }
 
+  const selectedCards = selectedIndices.map(index => hand[index]);
   const result = validateMeld(selectedCards);
 
   if (!result.valid) {
@@ -691,16 +692,16 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
     result.type === "Seri Raja" ||
     result.type === "Seri As";
 
+  // Setiap pemain harus membuka Seri sebelum membuka Tris.
   if (
     !game.hasOpenedInitialSeries[playerIndex] &&
     !isInitialSeries
   ) {
-    alert(
-      "Kamu harus membuka Seri awal terlebih dahulu. Tris belum boleh dibuka."
-    );
+    alert("Kamu harus membuka Seri awal terlebih dahulu. Tris belum boleh dibuka.");
     return;
   }
 
+  // Simpan kombinasi di area pemain yang sedang aktif.
   game.openMelds[playerIndex].push({
     type: result.type,
     cards: [...selectedCards]
@@ -710,20 +711,22 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
     game.hasOpenedInitialSeries[playerIndex] = true;
   }
 
-  const indicesToRemove = [...selectedIndices].sort((a, b) => b - a);
-
-  indicesToRemove.forEach(index => {
-    hand.splice(index, 1);
-  });
+  // Keluarkan kartu dari tangan.
+  [...selectedIndices]
+    .sort((a, b) => b - a)
+    .forEach(index => hand.splice(index, 1));
 
   game.selectedCardIndices = [];
 
+  // Penting: jangan mengubah game.hasDrawn menjadi true di sini.
+  // Pemain masih boleh makan setelah membuka kombinasi awal.
   renderPlayerHand();
   renderOpponentHands();
   renderOpenMelds();
 
   alert(`Kombinasi berhasil dibuka: ${result.type}`);
 });
+
   
 
 function renderPlayerHand() {
