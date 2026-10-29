@@ -1146,7 +1146,6 @@ nextTurn();
 });
 
 
-
 document.getElementById("eat-discard-button").addEventListener("click", () => {
   const game = window.remiGame;
   const playerIndex = game.currentPlayer;
@@ -1157,53 +1156,76 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
     return;
   }
 
-  if (game.selectedDiscardIndex === null) {
-    alert("Pilih kartu sasaran pada Discard Pile terlebih dahulu.");
+  // Gunakan daftar pilihan baru.
+  const targetIndices = Array.isArray(game.selectedDiscardIndices)
+    ? [...game.selectedDiscardIndices].sort((a, b) => a - b)
+    : (
+        game.selectedDiscardIndex !== null
+          ? [game.selectedDiscardIndex]
+          : []
+      );
+
+  if (targetIndices.length < 1 || targetIndices.length > 2) {
+    alert("Pilih satu kartu sasaran, atau dua kartu As untuk Seri As.");
     return;
   }
 
-  const selectedIndex = game.selectedDiscardIndex;
   const discardLength = game.discardPile.length;
-
-  // Hanya tujuh kartu buangan teratas yang boleh menjadi sasaran.
   const earliestAllowedIndex = Math.max(0, discardLength - 7);
 
-  if (
-    selectedIndex < earliestAllowedIndex ||
-    selectedIndex >= discardLength
-  ) {
+  if (targetIndices.some(index =>
+    !Number.isInteger(index) ||
+    index < earliestAllowedIndex ||
+    index >= discardLength
+  )) {
     alert("Kartu sasaran harus berada dalam tujuh kartu buangan terakhir.");
     return;
   }
 
-  // Pemain harus memilih kartu tangan yang akan membentuk kombinasi.
+  // Periksa kartu tangan yang dipilih.
   const selectedIndices = [...game.selectedCardIndices];
 
-  if (selectedIndices.length < 2) {
-    alert(
-      "Pilih minimal dua kartu di tangan yang akan dikombinasikan dengan kartu sasaran."
-    );
+  if (selectedIndices.length < 1) {
+    alert("Pilih kartu tangan yang akan membentuk kombinasi.");
     return;
   }
 
   if (
     new Set(selectedIndices).size !== selectedIndices.length ||
-    selectedIndices.some(index => !hand[index])
+    selectedIndices.some(index =>
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= hand.length
+    )
   ) {
     alert("Pilihan kartu tangan tidak valid. Pilih ulang kartu.");
     return;
   }
 
-  const targetCard = game.discardPile[selectedIndex];
   const selectedCards = selectedIndices.map(index => hand[index]);
+  const targetCards = targetIndices.map(index => game.discardPile[index]);
 
-  // Kartu sasaran wajib menjadi bagian dari kombinasi yang sah.
-  const meldCards = [...selectedCards, targetCard];
+  // Dua kartu sasaran hanya diperbolehkan untuk Seri As.
+  if (targetCards.length === 2) {
+    const allAces = [...selectedCards, ...targetCards].every(card =>
+      !card.joker && card.value === 1
+    );
+
+    if (!allAces || selectedCards.length !== 2) {
+      alert(
+        "Untuk memilih dua kartu sasaran, pilih tepat dua kartu As di tangan dan dua kartu As di Discard Pile."
+      );
+      return;
+    }
+  }
+
+  // Semua kartu sasaran harus menjadi bagian kombinasi yang sah.
+  const meldCards = [...selectedCards, ...targetCards];
   const result = validateMeld(meldCards);
 
   if (!result.valid) {
     alert(
-      "Makan tidak sah. Kartu sasaran harus langsung membentuk kombinasi yang sah dengan kartu pilihanmu."
+      "Makan tidak sah. Kartu tangan dan kartu sasaran harus membentuk kombinasi yang sah."
     );
     return;
   }
@@ -1223,16 +1245,18 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
     return;
   }
 
-  // Semua pemeriksaan selesai. Baru sekarang pindahkan kartu.
-  // Kartu sasaran dan seluruh kartu di atasnya diambil.
-  const takenCards = game.discardPile.splice(selectedIndex);
+  // Semua validasi lolos. Ambil dari target paling bawah hingga paling atas.
+  const firstTargetIndex = targetIndices[0];
+  const takenCards = game.discardPile.splice(firstTargetIndex);
 
-  // Keluarkan kartu tangan yang masuk ke kombinasi.
+  // Keluarkan kartu tangan yang digunakan dalam kombinasi.
   [...selectedIndices]
     .sort((a, b) => b - a)
     .forEach(index => hand.splice(index, 1));
 
-  // Kartu sasaran masuk ke kombinasi terbuka.
+  // Catat kartu sasaran yang sudah digunakan dalam kombinasi.
+  const targetCardSet = new Set(targetCards);
+
   game.openMelds[playerIndex].push({
     type: result.type,
     cards: [...meldCards]
@@ -1242,11 +1266,13 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
     game.hasOpenedInitialSeries[playerIndex] = true;
   }
 
-  // Kartu lain yang ikut terambil tetap masuk ke tangan.
-  // Kartu sasaran tidak dimasukkan lagi karena sudah dibuka.
-  hand.push(...takenCards.slice(1));
+  // Semua kartu yang ikut terambil tetapi bukan sasaran
+  // tetap masuk ke tangan pemain.
+  hand.push(...takenCards.filter(card => !targetCardSet.has(card)));
 
+  // Bersihkan pilihan dan tandai bahwa pemain sudah mengambil kartu.
   game.selectedCardIndices = [];
+  game.selectedDiscardIndices = [];
   game.selectedDiscardIndex = null;
   game.hasDrawn = true;
 
@@ -1254,15 +1280,14 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
   renderOpponentHands();
   renderOpenMelds();
 
-  // Gambar ulang Discard Pile tanpa mengubah urutan kartu yang tersisa.
+  // Gambar ulang Discard Pile.
   const discardCards = document.getElementById("discard-cards");
   discardCards.replaceChildren();
-  
-  game.discardPile.forEach((card, index) => {
-  const element = document.createElement("div");
-  element.className = "card";
-  element.dataset.discardIndex = index;
 
+  game.discardPile.forEach((card, index) => {
+    const element = document.createElement("div");
+    element.className = "card";
+    element.dataset.discardIndex = index;
 
     if (card.color === "red") {
       element.classList.add("red");
@@ -1274,25 +1299,22 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
 
     element.style.cursor = "pointer";
 
-
     element.addEventListener("click", () => {
       if (game.hasDrawn) return;
-    
+
       if (!Array.isArray(game.selectedDiscardIndices)) {
         game.selectedDiscardIndices = [];
       }
-    
-      // Batasi pilihan pada 7 kartu paling atas.
+
       const batasBawah = Math.max(0, game.discardPile.length - 7);
-    
+
       if (index < batasBawah) {
         alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
         return;
       }
-    
+
       const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
-    
-      // Klik ulang untuk membatalkan pilihan.
+
       if (posisiPilihan !== -1) {
         game.selectedDiscardIndices.splice(posisiPilihan, 1);
       } else {
@@ -1300,37 +1322,34 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
           alert("Maksimal pilih 2 kartu Discard Pile.");
           return;
         }
-    
+
         game.selectedDiscardIndices.push(index);
       }
-    
-      // Hapus semua tanda pilihan terlebih dahulu.
+
       discardCards.querySelectorAll(".card").forEach(item => {
         item.classList.remove("selected");
       });
-    
-      // Tandai kembali semua kartu yang dipilih.
+
       game.selectedDiscardIndices.forEach(selectedIndex => {
         const selectedElement = discardCards.querySelector(
           `.card[data-discard-index="${selectedIndex}"]`
         );
-    
+
         if (selectedElement) {
-        selectedElement.classList.add("selected");
-      }
+          selectedElement.classList.add("selected");
+        }
+      });
+
+      game.selectedDiscardIndex =
+        game.selectedDiscardIndices.length === 1
+          ? game.selectedDiscardIndices[0]
+          : null;
+
+      console.log(
+        "Kartu Discard Pile yang dipilih:",
+        game.selectedDiscardIndices
+      );
     });
-
-    // Pertahankan kompatibilitas dengan kode lama.
-    game.selectedDiscardIndex =
-      game.selectedDiscardIndices.length === 1
-        ? game.selectedDiscardIndices[0]
-        : null;
-
-    console.log(
-      "Kartu Discard Pile yang dipilih:",
-      game.selectedDiscardIndices
-    );
-  });
 
     discardCards.appendChild(element);
   });
@@ -1339,10 +1358,9 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
 
   alert(
     `Makan berhasil. Kombinasi ${result.type} langsung dibuka. ` +
-    `${takenCards.length - 1} kartu tambahan masuk ke tangan.`
+    `${takenCards.length - targetCards.length} kartu tambahan masuk ke tangan.`
   );
 });
-
 
 </script>
 
