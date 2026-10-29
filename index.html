@@ -1274,20 +1274,63 @@ document.getElementById("eat-discard-button").addEventListener("click", () => {
 
     element.style.cursor = "pointer";
 
+
     element.addEventListener("click", () => {
       if (game.hasDrawn) return;
-
-      game.selectedDiscardIndex =
-        game.selectedDiscardIndex === index ? null : index;
-
+    
+      if (!Array.isArray(game.selectedDiscardIndices)) {
+        game.selectedDiscardIndices = [];
+      }
+    
+      // Batasi pilihan pada 7 kartu paling atas.
+      const batasBawah = Math.max(0, game.discardPile.length - 7);
+    
+      if (index < batasBawah) {
+        alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
+        return;
+      }
+    
+      const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
+    
+      // Klik ulang untuk membatalkan pilihan.
+      if (posisiPilihan !== -1) {
+        game.selectedDiscardIndices.splice(posisiPilihan, 1);
+      } else {
+        if (game.selectedDiscardIndices.length >= 2) {
+          alert("Maksimal pilih 2 kartu Discard Pile.");
+          return;
+        }
+    
+        game.selectedDiscardIndices.push(index);
+      }
+    
+      // Hapus semua tanda pilihan terlebih dahulu.
       discardCards.querySelectorAll(".card").forEach(item => {
         item.classList.remove("selected");
       });
-
-      if (game.selectedDiscardIndex !== null) {
-        element.classList.add("selected");
+    
+      // Tandai kembali semua kartu yang dipilih.
+      game.selectedDiscardIndices.forEach(selectedIndex => {
+        const selectedElement = discardCards.querySelector(
+          `.card[data-discard-index="${selectedIndex}"]`
+        );
+    
+        if (selectedElement) {
+        selectedElement.classList.add("selected");
       }
     });
+
+    // Pertahankan kompatibilitas dengan kode lama.
+    game.selectedDiscardIndex =
+      game.selectedDiscardIndices.length === 1
+        ? game.selectedDiscardIndices[0]
+        : null;
+
+    console.log(
+      "Kartu Discard Pile yang dipilih:",
+      game.selectedDiscardIndices
+    );
+  });
 
     discardCards.appendChild(element);
   });
