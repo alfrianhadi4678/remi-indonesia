@@ -1291,7 +1291,6 @@ targetIndices.sort((a, b) => a - b);
   }
 
   // Semua validasi lolos. Ambil dari target paling bawah hingga paling atas.
-  const firstTargetIndex = targetIndices[0];
   const takenCards = game.discardPile.splice(firstTargetIndex);
 
   // Keluarkan kartu tangan yang digunakan dalam kombinasi.
@@ -1300,7 +1299,6 @@ targetIndices.sort((a, b) => a - b);
     .forEach(index => hand.splice(index, 1));
 
   // Catat kartu sasaran yang sudah digunakan dalam kombinasi.
-  const targetCardSet = new Set(targetCards);
 
   game.openMelds[playerIndex].push({
     type: result.type,
