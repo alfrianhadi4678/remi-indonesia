@@ -1115,15 +1115,15 @@ document.getElementById("draw-button").addEventListener("click", () => {
 document.getElementById("discard-button").addEventListener("click", () => {
   const game = window.remiGame;
 
-  if (!game.hasDrawn) {
-    alert("Ambil kartu terlebih dahulu.");
-    return;
+  if (!game.hasDrawn && !game.hasEatenThisTurn) {
+  alert("Ambil kartu terlebih dahulu.");
+  return;
   }
 
   if (game.selectedCardIndices.length !== 1) {
   alert("Pilih hanya satu kartu untuk dibuang.");
   return;
-}
+  }
 
   const hand = game.players[game.currentPlayer];
 
