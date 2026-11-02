@@ -372,7 +372,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.1.0</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.2.0</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -549,7 +549,9 @@ window.remiGame.openMelds = Array.from(
 renderDiscardPile();
 updatePileCounts();
 
-function validateMeld(cards) {
+function validateMeld(cards, options = {}) {
+  const allowJokerInAceSeries =
+    options.allowJokerInAceSeries !== false;
   if (!Array.isArray(cards) || cards.length < 3) {
     return {
       valid: false,
@@ -636,12 +638,14 @@ function validateMeld(cards) {
     };
   }
 
-  // Seri As: harus tepat empat As dengan empat simbol berbeda.
+  // Seri As: tepat 4 kartu.
+  // Joker boleh membantu jika kombinasi berasal dari tangan pemain.
   if (
+    allowJokerInAceSeries &&
     cards.length === 4 &&
-    jokerCount === 0 &&
+    normalCards.length >= 1 &&
     normalCards.every(card => card.value === 14) &&
-    new Set(normalCards.map(card => card.suit)).size === 4
+    new Set(normalCards.map(card => card.suit)).size === normalCards.length
   ) {
     return {
       valid: true,
@@ -673,6 +677,128 @@ function validateMeld(cards) {
   };
 }
 
+
+// Memeriksa apakah seluruh kartu bisa dibagi menjadi kombinasi sah.
+// Digunakan untuk pemeriksaan Tutup Tangan.
+function findAllMelds(cards) {
+  if (!Array.isArray(cards)) {
+    return {
+      valid: false,
+      melds: []
+    };
+  }
+
+  // Tidak ada kartu berarti seluruh kartu sudah terbagi habis.
+  if (cards.length === 0) {
+    return {
+      valid: true,
+      melds: []
+    };
+  }
+
+  // Jika tersisa kurang dari 3 kartu, tidak mungkin membentuk kombinasi.
+  if (cards.length < 3) {
+    return {
+      valid: false,
+      melds: []
+    };
+  }
+
+  // Fungsi pencarian kombinasi secara berulang (backtracking).
+  function search(remainingCards) {
+    if (remainingCards.length === 0) {
+      return [];
+    }
+
+    if (remainingCards.length < 3) {
+      return null;
+    }
+
+    // Kartu pertama wajib masuk ke salah satu kombinasi.
+    const firstCard = remainingCards[0];
+
+    // Ukuran kombinasi maksimal 9 kartu,
+    // sesuai panjang maksimal Seri Angka 2–10.
+    const maxGroupSize = Math.min(9, remainingCards.length);
+
+    // Coba kombinasi dari ukuran terkecil.
+    for (let size = 3; size <= maxGroupSize; size++) {
+      const selected = [firstCard];
+
+      function tryCombination(startIndex, needed) {
+        if (needed === 0) {
+          const result = validateMeld(selected);
+
+          if (!result.valid) {
+            return null;
+          }
+
+          // Keluarkan kartu yang sudah digunakan.
+          const usedCards = new Set(selected);
+
+          const remaining = remainingCards.filter(
+            card => !usedCards.has(card)
+          );
+
+          // Periksa apakah sisa kartu juga bisa dibagi habis.
+          const nextMelds = search(remaining);
+
+          if (nextMelds === null) {
+            return null;
+          }
+
+          return [
+            {
+              type: result.type,
+              cards: [...selected]
+            },
+            ...nextMelds
+          ];
+        }
+
+        for (
+          let i = startIndex;
+          i <= remainingCards.length - needed;
+          i++
+        ) {
+          selected.push(remainingCards[i]);
+
+          const result = tryCombination(i + 1, needed - 1);
+
+          if (result !== null) {
+            return result;
+          }
+
+          selected.pop();
+        }
+
+        return null;
+      }
+
+      const result = tryCombination(1, size - 1);
+
+      if (result !== null) {
+        return result;
+      }
+    }
+
+    return null;
+  }
+
+  const melds = search(cards);
+
+  if (melds === null) {
+    return {
+      valid: false,
+      melds: []
+    };
+  }
+
+  return {
+    valid: true,
+    melds
+  };
+} 
 
 document.getElementById("open-meld-button").addEventListener("click", () => {
   const game = window.remiGame;
@@ -1262,7 +1388,9 @@ targetIndices.sort((a, b) => a - b);
 
   // Semua kartu sasaran harus menjadi bagian kombinasi yang sah.
   const meldCards = [...selectedCards, ...targetCards];
-  const result = validateMeld(meldCards);
+  const result = validateMeld(meldCards, {
+  allowJokerInAceSeries: false
+  });
 
   if (!result.valid) {
     alert(
