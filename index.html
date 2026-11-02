@@ -661,7 +661,12 @@ function validateMeld(cards, options = {}) {
     normalCards.length <= 4 &&
     normalCards.every(card => card.value === normalCards[0].value) &&
     new Set(normalCards.map(card => card.suit)).size === normalCards.length &&
-    cards.length <= 4
+    cards.length <= 4 &&
+    !(
+      allowJokerInAceSeries === false &&
+      normalCards[0].value === 14 &&
+      jokerCount > 0
+    )
   ) {
     return {
       valid: true,
