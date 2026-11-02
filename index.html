@@ -76,11 +76,23 @@
     }
 
     .meld {
+      position: relative;
       background: #0b3026;
       border: 1px solid #b99c58;
       border-radius: 8px;
       padding: 8px;
       max-width: 100%;
+    }
+
+    /* Kartu penutup pada Tutup Tangan */
+    .closing-card-overlay {
+      position: absolute;
+      top: -30px;
+      right: -12px;
+      z-index: 5;
+      transform: rotate(8deg) scale(0.85);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
     }
 
     .meld small {
@@ -372,7 +384,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.1.0</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.2.0</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -494,6 +506,17 @@ function updateTurnIndicator() {
 
   if (!indicator) return;
 
+  // Jika permainan sudah berakhir.
+  if (game.winner !== null) {
+    indicator.textContent =
+      game.winner === 0
+        ? `🏆 Anda menang dengan ${game.winType}!`
+        : `🏆 Pemain ${game.winner + 1} menang dengan ${game.winType}!`;
+
+    return;
+  }
+
+  // Jika permainan masih berlangsung.
   indicator.textContent = game.currentPlayer === 0
     ? `🟢 Giliran Anda · Giliran ${game.turnNumber}`
     : `⏳ Giliran Pemain ${game.currentPlayer + 1} · Giliran ${game.turnNumber}`;
@@ -524,6 +547,10 @@ window.remiGame.hasOpenedInitialSeries =
     { length: window.remiGame.players.length },
     () => false
   );
+
+// Status akhir permainan.
+window.remiGame.winner = null;
+window.remiGame.winType = null;
 
 // Status permanen pemain selama satu permainan.
 window.remiGame.hasEverEaten =
@@ -807,6 +834,9 @@ function findAllMelds(cards) {
 
 document.getElementById("open-meld-button").addEventListener("click", () => {
   const game = window.remiGame;
+  if (game.winner !== null) {
+  return;
+  }
   const playerIndex = game.currentPlayer;
   const hand = game.players[playerIndex];
   const selectedIndices = [...game.selectedCardIndices];
@@ -1046,6 +1076,23 @@ function renderOpenMelds() {
       });
 
       meldElement.append(title, cardsElement);
+
+      // Tampilkan kartu penutup jika kombinasi berasal dari Tutup Tangan.
+      if (meld.closingCard) {
+        const closingCardElement = document.createElement("div");
+      
+        closingCardElement.className = "card closing-card-overlay";
+      
+        if (meld.closingCard.color === "red") {
+          closingCardElement.classList.add("red");
+        }
+      
+        closingCardElement.textContent =
+          `${meld.closingCard.label}${meld.closingCard.suit}`;
+      
+        meldElement.appendChild(closingCardElement);
+      }
+      
       area.appendChild(meldElement);
     });
   });
@@ -1235,6 +1282,10 @@ function renderDiscardPile() {
 document.getElementById("draw-button").addEventListener("click", () => {
   const game = window.remiGame;
 
+  if (game.winner !== null) {
+  return;
+  }
+
   if (game.hasDrawn || game.hasEatenThisTurn) {
   alert("Kamu sudah mengambil kartu pada giliran ini, baik dari Draw Pile maupun Discard Pile.");
   return;
@@ -1254,42 +1305,107 @@ document.getElementById("draw-button").addEventListener("click", () => {
   updatePileCounts();
 });
 
-
-
 document.getElementById("discard-button").addEventListener("click", () => {
   const game = window.remiGame;
 
+  // Permainan tidak boleh dilanjutkan setelah ada pemenang.
+  if (game.winner !== null) {
+    return;
+  }
+
   if (!game.hasDrawn && !game.hasEatenThisTurn) {
-  alert("Ambil kartu terlebih dahulu.");
-  return;
+    alert("Ambil kartu terlebih dahulu.");
+    return;
   }
 
   if (game.selectedCardIndices.length !== 1) {
-  alert("Pilih hanya satu kartu untuk dibuang.");
-  return;
+    alert("Pilih hanya satu kartu untuk dibuang.");
+    return;
   }
 
-  const hand = game.players[game.currentPlayer];
+  const playerIndex = game.currentPlayer;
+  const hand = game.players[playerIndex];
 
-  // Buang satu kartu yang terakhir dipilih
+  // Buang satu kartu yang terakhir dipilih.
   const selectedIndex = game.selectedCardIndices[
     game.selectedCardIndices.length - 1
   ];
 
   const selectedCard = hand[selectedIndex];
 
-  if (selectedCard.joker) {
-  alert("Joker tidak boleh dibuang ke Discard Pile.");
-  return;
+  if (!selectedCard) {
+    alert("Kartu yang dipilih tidak ditemukan. Pilih ulang.");
+    return;
   }
 
+  if (selectedCard.joker) {
+    alert("Joker tidak boleh dibuang ke Discard Pile.");
+    return;
+  }
+
+  // Periksa kartu yang tersisa setelah kartu penutup dikeluarkan.
+  const remainingHand = hand.filter(
+    (card, index) => index !== selectedIndex
+  );
+
+  const tutupResult = findAllMelds(remainingHand);
+
+  // Periksa seluruh persyaratan Tutup Tangan.
+  const canTutupTangan =
+    !game.hasEverEaten[playerIndex] &&
+    !game.hasOpenedInitialSeries[playerIndex] &&
+    !game.hasPawnedJoker[playerIndex] &&
+    remainingHand.length >= 3 &&
+    tutupResult.valid;
+
+  // Keluarkan kartu penutup dari tangan.
   const discarded = hand.splice(selectedIndex, 1)[0];
 
+  // Kartu penutup tetap masuk ke Discard Pile.
   game.discardPile.push(discarded);
-  game.selectedCardIndices = [];
-  
-  // Status pengambilan kartu tidak direset di sini.
 
+  game.selectedCardIndices = [];
+
+  // Jika semua persyaratan Tutup Tangan terpenuhi.
+  if (canTutupTangan) {
+
+    // Buka semua kombinasi secara otomatis.
+    const automaticMelds = tutupResult.melds.map(meld => ({
+      type: meld.type,
+      cards: [...meld.cards]
+    }));
+
+    // Tandai kartu terakhir sebagai kartu penutup.
+    const lastMeld = automaticMelds[automaticMelds.length - 1];
+
+    lastMeld.closingCard = discarded;
+
+    // Simpan kombinasi pada area milik pemain.
+    game.openMelds[playerIndex].push(...automaticMelds);
+
+    // Catat kemenangan.
+    game.winner = playerIndex;
+    game.winType = "Tutup Tangan";
+
+    // Perbarui seluruh tampilan.
+    renderPlayerHand();
+    renderOpponentHands();
+    renderOpenMelds();
+    renderDiscardPile();
+    updatePileCounts();
+    updateTurnIndicator();
+
+    alert(
+      "TUTUP TANGAN BERHASIL! " +
+      "Seluruh kartu berhasil dibagi menjadi kombinasi yang sah. " +
+      "Kamu memenangkan permainan!"
+    );
+
+    // Jangan lanjutkan giliran.
+    return;
+  }
+
+  // Jika bukan Tutup Tangan, jalankan pembuangan biasa.
   renderPlayerHand();
   renderDiscardPile();
   updatePileCounts();
@@ -1300,6 +1416,9 @@ document.getElementById("discard-button").addEventListener("click", () => {
 
 document.getElementById("eat-discard-button").addEventListener("click", () => {
   const game = window.remiGame;
+  if (game.winner !== null) {
+  return;
+  }
   const playerIndex = game.currentPlayer;
   const hand = game.players[playerIndex];
 
