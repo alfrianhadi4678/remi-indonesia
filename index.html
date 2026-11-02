@@ -539,8 +539,6 @@ function nextTurn() {
   renderPlayerHand();
   renderOpponentHands();
 }
-
-updateTurnIndicator();
   
 window.remiGame.hasOpenedInitialSeries =
   Array.from(
@@ -551,6 +549,7 @@ window.remiGame.hasOpenedInitialSeries =
 // Status akhir permainan.
 window.remiGame.winner = null;
 window.remiGame.winType = null;
+updateTurnIndicator();
 
 // Status permanen pemain selama satu permainan.
 window.remiGame.hasEverEaten =
