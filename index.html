@@ -1076,7 +1076,7 @@ function renderOpenMelds() {
 
       meldElement.append(title, cardsElement);
 
-      // Tampilkan kartu penutup jika kombinasi berasal dari Tutup Tangan.
+      // Tampilkan kartu penutup jika pemain menang.
       if (meld.closingCard) {
         const closingCardElement = document.createElement("div");
       
@@ -1404,6 +1404,53 @@ document.getElementById("discard-button").addEventListener("click", () => {
     return;
   }
 
+  
+  // Periksa persyaratan Tutup Biasa.
+  const canTutupBiasa =
+    game.hasOpenedInitialSeries[playerIndex] &&
+    remainingHand.length >= 3 &&
+    tutupResult.valid;
+
+  // Jika seluruh persyaratan Tutup Biasa terpenuhi.
+  if (canTutupBiasa) {
+
+    // Buka semua kombinasi yang masih tersisa di tangan.
+    const automaticMelds = tutupResult.melds.map(meld => ({
+      type: meld.type,
+      cards: [...meld.cards]
+    }));
+
+    // Tandai kartu terakhir sebagai kartu penutup.
+    const lastMeld = automaticMelds[automaticMelds.length - 1];
+
+    lastMeld.closingCard = discarded;
+
+    // Simpan kombinasi pada area milik pemain.
+    game.openMelds[playerIndex].push(...automaticMelds);
+
+    // Catat kemenangan.
+    game.winner = playerIndex;
+    game.winType = "Tutup Biasa";
+
+    // Perbarui seluruh tampilan.
+    renderPlayerHand();
+    renderOpponentHands();
+    renderOpenMelds();
+    renderDiscardPile();
+    updatePileCounts();
+    updateTurnIndicator();
+
+    alert(
+      "TUTUP BIASA BERHASIL! " +
+      "Seluruh kartu berhasil dibagi menjadi kombinasi yang sah. " +
+      "Kamu memenangkan permainan!"
+    );
+
+    // Jangan lanjutkan giliran.
+    return;
+  }
+
+  
   // Jika bukan Tutup Tangan, jalankan pembuangan biasa.
   renderPlayerHand();
   renderDiscardPile();
