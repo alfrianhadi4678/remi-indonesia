@@ -525,6 +525,19 @@ window.remiGame.hasOpenedInitialSeries =
     () => false
   );
 
+// Status permanen pemain selama satu permainan.
+window.remiGame.hasEverEaten =
+  Array.from(
+    { length: window.remiGame.players.length },
+    () => false
+  );
+
+window.remiGame.hasPawnedJoker =
+  Array.from(
+    { length: window.remiGame.players.length },
+    () => false
+  );
+
 window.remiGame.selectedDiscardIndex = null;
 window.remiGame.selectedDiscardIndices = [];
 
@@ -1317,6 +1330,10 @@ targetIndices.sort((a, b) => a - b);
   game.selectedCardIndices = [];
   game.selectedDiscardIndices = [];
   game.selectedDiscardIndex = null;
+  
+  // Catat bahwa pemain pernah makan selama permainan.
+  game.hasEverEaten[playerIndex] = true;
+  
   game.hasEatenThisTurn = true;
 
   renderPlayerHand();
