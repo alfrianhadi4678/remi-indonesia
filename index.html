@@ -101,6 +101,15 @@
       margin-bottom: 7px;
     }
 
+    .meld.selectable-meld {
+      cursor: pointer;
+    }
+
+    .meld.selected-meld {
+      outline: 3px solid #e4bd54;
+      box-shadow: 0 0 10px rgba(228, 189, 84, 0.45);
+    }
+
     .cards {
       display: flex;
       flex-wrap: wrap;
@@ -430,7 +439,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.2.0.7</p>
+        <p class="game-version">V.2.0.8</p>
       </form>
     </div>
   </section>
@@ -541,6 +550,7 @@
         <button id="eat-discard-button">AMBIL DARI DISCARD PILE</button>
         <button class="discard" id="discard-button">BUANG KARTU</button>
         <button id="open-meld-button">BUKA KOMBINASI</button>
+        <button id="extend-meld-button" type="button">TAMBAH KE KOMBINASI</button>
       </section>
 
 
@@ -553,7 +563,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.2.7</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.2.8</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -667,6 +677,9 @@ function dealCards(playerCount = 4) {
   
 window.remiGame = dealCards(4);
 window.remiGame.selectedCardIndices = [];
+window.remiGame.selectedMeldIndex = null;
+window.remiGame.draggedCardIndex = null;
+window.remiGame.draggedPlayerIndex = null;
 
 // Menampilkan skor berdasarkan satu sumber data: window.remiGame.scores.
 function renderScores() {
@@ -722,6 +735,7 @@ function nextTurn() {
   game.hasDrawn = false;
   game.hasEatenThisTurn = false;
   game.selectedCardIndices = [];
+  game.selectedMeldIndex = null;
   game.selectedDiscardIndex = null;
   game.selectedDiscardIndices = [];
 
@@ -1116,16 +1130,13 @@ function renderPlayerHand() {
   hand.forEach((card, index) => {
     const element = document.createElement("div");
     element.className = "card selectable";
-    element.draggable = game.currentPlayer === 0;
+    // Pemain dapat merapikan susunan kartu kapan saja, termasuk di luar gilirannya.
+    element.draggable = true;
     element.dataset.handIndex = String(index);
 
     // Pindahkan posisi kartu dengan drag-and-drop tanpa mengubah isi kartu.
     element.addEventListener("dragstart", event => {
-      if (game.currentPlayer !== 0) {
-        event.preventDefault();
-        return;
-      }
-
+      game.draggedPlayerIndex = 0;
       game.draggedCardIndex = index;
       element.classList.add("dragging");
       if (event.dataTransfer) {
@@ -1136,13 +1147,14 @@ function renderPlayerHand() {
 
     element.addEventListener("dragend", () => {
       game.draggedCardIndex = null;
+      game.draggedPlayerIndex = null;
       handElement.querySelectorAll(".card").forEach(cardElement => {
         cardElement.classList.remove("dragging", "drag-over");
       });
     });
 
     element.addEventListener("dragover", event => {
-      if (game.currentPlayer !== 0 || !Number.isInteger(game.draggedCardIndex)) return;
+      if (game.draggedPlayerIndex !== 0 || !Number.isInteger(game.draggedCardIndex)) return;
       event.preventDefault();
       if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
       element.classList.add("drag-over");
@@ -1156,6 +1168,7 @@ function renderPlayerHand() {
       event.preventDefault();
       element.classList.remove("drag-over");
 
+      if (game.draggedPlayerIndex !== 0) return;
       const fromIndex = game.draggedCardIndex;
       const toIndex = index;
       if (!Number.isInteger(fromIndex) || fromIndex === toIndex) return;
@@ -1176,6 +1189,7 @@ function renderPlayerHand() {
       });
 
       game.draggedCardIndex = null;
+      game.draggedPlayerIndex = null;
       renderPlayerHand();
     });
 
@@ -1269,6 +1283,20 @@ function renderOpenMelds() {
       const meldElement = document.createElement("div");
       meldElement.className = "meld";
 
+      if (playerIndex === game.currentPlayer) {
+        meldElement.classList.add("selectable-meld");
+        if (game.selectedMeldIndex === meldIndex) {
+          meldElement.classList.add("selected-meld");
+        }
+        meldElement.title = "Klik untuk memilih kombinasi ini";
+        meldElement.addEventListener("click", () => {
+          game.selectedMeldIndex = game.selectedMeldIndex === meldIndex
+            ? null
+            : meldIndex;
+          renderOpenMelds();
+        });
+      }
+
       const title = document.createElement("small");
       title.textContent = meld.type || `Kombinasi ${meldIndex + 1}`;
 
@@ -1350,6 +1378,72 @@ function renderOpenMelds() {
 }
 
 
+document.getElementById("extend-meld-button").addEventListener("click", () => {
+  const game = window.remiGame;
+  if (game.winner !== null) return;
+
+  const playerIndex = game.currentPlayer;
+  const hand = game.players[playerIndex];
+  const melds = game.openMelds[playerIndex];
+  const meldIndex = game.selectedMeldIndex;
+
+  if (!game.hasEatenThisTurn) {
+    alert("Penambahan kartu ke kombinasi tersedia setelah kamu makan dari Discard Pile.");
+    return;
+  }
+
+  if (!Number.isInteger(meldIndex) || !melds[meldIndex]) {
+    alert("Pilih terlebih dahulu kombinasi milikmu yang ingin diperpanjang.");
+    return;
+  }
+
+  const selectedIndices = [...game.selectedCardIndices];
+  if (selectedIndices.length === 0) {
+    alert("Pilih kartu tangan yang ingin ditambahkan ke kombinasi.");
+    return;
+  }
+
+  if (
+    new Set(selectedIndices).size !== selectedIndices.length ||
+    selectedIndices.some(index => !Number.isInteger(index) || index < 0 || index >= hand.length)
+  ) {
+    alert("Pilihan kartu tangan tidak valid. Pilih ulang kartu.");
+    return;
+  }
+
+  // Satu kartu harus tetap tersisa untuk memenuhi kewajiban buang kartu.
+  if (hand.length - selectedIndices.length < 1) {
+    alert("Sisakan minimal satu kartu di tangan untuk dibuang pada giliran ini.");
+    return;
+  }
+
+  const selectedCards = selectedIndices.map(index => hand[index]);
+  const targetMeld = melds[meldIndex];
+  const extendedCards = [...targetMeld.cards, ...selectedCards];
+  const result = validateMeld(extendedCards);
+
+  if (!result.valid) {
+    alert("Kartu yang dipilih tidak dapat memperpanjang kombinasi tersebut secara sah.");
+    return;
+  }
+
+  // Komit penambahan hanya setelah semua validasi lolos. Kartu yang sudah
+  // dimakan tetap berada di kombinasi terbuka dan tidak pernah kembali ke tangan.
+  targetMeld.cards = extendedCards;
+  targetMeld.type = result.type;
+
+  [...selectedIndices].sort((a, b) => b - a).forEach(index => hand.splice(index, 1));
+  game.selectedCardIndices = [];
+  game.selectedMeldIndex = meldIndex;
+
+  renderPlayerHand();
+  renderOpponentHands();
+  renderOpenMelds();
+
+  alert(`Kombinasi berhasil diperpanjang menjadi ${result.type}. Kamu tetap wajib membuang satu kartu.`);
+});
+
+
 function renderOpponentHands() {
   const game = window.remiGame;
 
@@ -1385,6 +1479,62 @@ function renderOpponentHands() {
         }
 
         cardElement.classList.add("selectable");
+        cardElement.draggable = true;
+
+        // Dalam Develop Mode, susunan tangan setiap pemain dapat diuji terpisah.
+        cardElement.addEventListener("dragstart", event => {
+          game.draggedPlayerIndex = playerIndex;
+          game.draggedCardIndex = cardIndex;
+          cardElement.classList.add("dragging");
+          if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", String(cardIndex));
+          }
+        });
+
+        cardElement.addEventListener("dragend", () => {
+          game.draggedPlayerIndex = null;
+          game.draggedCardIndex = null;
+          handElement.querySelectorAll(".card").forEach(item => {
+            item.classList.remove("dragging", "drag-over");
+          });
+        });
+
+        cardElement.addEventListener("dragover", event => {
+          if (game.draggedPlayerIndex !== playerIndex || !Number.isInteger(game.draggedCardIndex)) return;
+          event.preventDefault();
+          if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+          cardElement.classList.add("drag-over");
+        });
+
+        cardElement.addEventListener("dragleave", () => {
+          cardElement.classList.remove("drag-over");
+        });
+
+        cardElement.addEventListener("drop", event => {
+          if (game.draggedPlayerIndex !== playerIndex) return;
+          event.preventDefault();
+          const fromIndex = game.draggedCardIndex;
+          const toIndex = cardIndex;
+          cardElement.classList.remove("drag-over");
+          if (!Number.isInteger(fromIndex) || fromIndex === toIndex) return;
+
+          const movedCard = hand.splice(fromIndex, 1)[0];
+          hand.splice(toIndex, 0, movedCard);
+
+          if (game.currentPlayer === playerIndex) {
+            game.selectedCardIndices = game.selectedCardIndices.map(selectedIndex => {
+              if (selectedIndex === fromIndex) return toIndex;
+              if (fromIndex < toIndex && selectedIndex > fromIndex && selectedIndex <= toIndex) return selectedIndex - 1;
+              if (toIndex < fromIndex && selectedIndex >= toIndex && selectedIndex < fromIndex) return selectedIndex + 1;
+              return selectedIndex;
+            });
+          }
+
+          game.draggedPlayerIndex = null;
+          game.draggedCardIndex = null;
+          renderOpponentHands();
+        });
 
         if (
           game.currentPlayer === playerIndex &&
@@ -1872,6 +2022,7 @@ targetIndices.sort((a, b) => a - b);
     type: result.type,
     cards: [...meldCards]
   });
+  game.selectedMeldIndex = game.openMelds[playerIndex].length - 1;
 
   if (isInitialSeries) {
     game.hasOpenedInitialSeries[playerIndex] = true;
