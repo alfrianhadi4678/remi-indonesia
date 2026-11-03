@@ -355,14 +355,38 @@
       color: #dce8df;
     }
 
+    .session-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     #session-bar button {
       width: auto;
+      margin-top: 0;
       padding: 8px 14px;
       border: 1px solid #b99752;
       border-radius: 6px;
       background: transparent;
       color: #e4c77e;
       cursor: pointer;
+    }
+
+    #admin-refresh-button {
+      border-color: #65b98a !important;
+      color: #9ce0b8 !important;
+    }
+
+    @media (max-width: 480px) {
+      #session-bar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .session-actions {
+        width: 100%;
+        flex-wrap: wrap;
+      }
     }
 
     @media (max-width: 480px) {
@@ -393,7 +417,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.2.0.5</p>
+        <p class="game-version">V.2.0.6</p>
       </form>
     </div>
   </section>
@@ -402,7 +426,10 @@
   <div id="game-app" hidden>
     <div id="session-bar">
       <span id="session-user"></span>
-      <button type="button" id="logout-button">Keluar</button>
+      <div class="session-actions">
+        <button type="button" id="admin-refresh-button" hidden>↻ Refresh Permainan</button>
+        <button type="button" id="logout-button">Keluar</button>
+      </div>
     </div>
 
 <!-- MENU DEVELOP DAN LIVE -->
@@ -1850,12 +1877,21 @@ function setGameMode(mode) {
   const modeMenu = document.getElementById("mode-menu");
   const sessionUser = document.getElementById("session-user");
   const logoutButton = document.getElementById("logout-button");
+  const adminRefreshButton = document.getElementById("admin-refresh-button");
 
   function enterGame(username, role) {
     homeScreen.hidden = true;
     gameApp.hidden = false;
     sessionUser.textContent =
       "Login sebagai: " + username + (role === "admin" ? " (Admin)" : " (Pemain)");
+
+    // Simpan sesi pada tab ini agar admin tetap masuk setelah refresh.
+    sessionStorage.setItem(
+      "remiSession",
+      JSON.stringify({ username: username, role: role })
+    );
+
+    adminRefreshButton.hidden = role !== "admin";
 
     if (role === "admin") {
       modeMenu.hidden = false;
@@ -1886,13 +1922,47 @@ function setGameMode(mode) {
   });
 
   logoutButton.addEventListener("click", function () {
+    sessionStorage.removeItem("remiSession");
     gameApp.hidden = true;
     homeScreen.hidden = false;
     usernameInput.value = "";
     passwordInput.value = "";
     loginError.textContent = "";
+    adminRefreshButton.hidden = true;
     usernameInput.focus();
   });
+
+  adminRefreshButton.addEventListener("click", function () {
+    const savedSession = sessionStorage.getItem("remiSession");
+
+    // Pastikan tombol hanya menjalankan refresh untuk sesi admin.
+    if (!savedSession) return;
+
+    try {
+      const session = JSON.parse(savedSession);
+      if (session.role !== "admin" || session.username !== "admin") return;
+      window.location.reload();
+    } catch (error) {
+      sessionStorage.removeItem("remiSession");
+    }
+  });
+
+  // Pulihkan sesi setelah halaman dimuat ulang pada tab yang sama.
+  try {
+    const savedSession = sessionStorage.getItem("remiSession");
+    if (savedSession) {
+      const session = JSON.parse(savedSession);
+      const account = testAccounts[session.username];
+
+      if (account && account.role === session.role) {
+        enterGame(session.username, session.role);
+      } else {
+        sessionStorage.removeItem("remiSession");
+      }
+    }
+  } catch (error) {
+    sessionStorage.removeItem("remiSession");
+  }
 })();
 </script>
 
