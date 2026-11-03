@@ -392,8 +392,6 @@
 
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
-
-        <p class="game-version">Game Version 2.0.1</p>
       </form>
     </div>
   </section>
@@ -438,21 +436,21 @@
     <section class="table">
       <div class="opponents">
         <section class="player">
-          <h3>Pemain 1 <span class="score">80 poin</span></h3>
+          <h3>Pemain 1 <span class="score" data-player-score="1">0 poin</span></h3>
           <div class="cards" id="player-1-hand"></div>
           <p>Kombinasi terbuka</p>
           <div class="meld-area" id="player-1-melds"></div>
         </section>
 
         <section class="player">
-          <h3>Pemain 2 <span class="score">80 poin</span></h3>
+          <h3>Pemain 2 <span class="score" data-player-score="2">0 poin</span></h3>
           <div class="cards" id="player-2-hand"></div>
           <p>Kombinasi terbuka</p>
           <div class="meld-area" id="player-2-melds"></div>
         </section>
 
         <section class="player">
-          <h3>Pemain 3 <span class="score">80 poin</span></h3>
+          <h3>Pemain 3 <span class="score" data-player-score="3">0 poin</span></h3>
           <div class="cards" id="player-3-hand"></div>
           <p>Kombinasi terbuka</p>
           <div class="meld-area" id="player-3-melds"></div>
@@ -488,10 +486,10 @@
     <aside class="sidebar">
       <section class="panel">
         <h3>Skor sementara</h3>
-        <div class="player-score"><span>Anda</span><b>150</b></div>
-        <div class="player-score"><span>Pemain 1</span><b>80</b></div>
-        <div class="player-score"><span>Pemain 2</span><b>120</b></div>
-        <div class="player-score"><span>Pemain 3</span><b>95</b></div>
+        <div class="player-score"><span>Anda</span><b data-player-score="0">0</b></div>
+        <div class="player-score"><span>Pemain 1</span><b data-player-score="1">0</b></div>
+        <div class="player-score"><span>Pemain 2</span><b data-player-score="2">0</b></div>
+        <div class="player-score"><span>Pemain 3</span><b data-player-score="3">0</b></div>
       </section>
 
       <section class="panel">
@@ -513,7 +511,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.2.1</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.2.0</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -617,7 +615,9 @@ function dealCards(playerCount = 4) {
   return {
     players,
     drawPile: deck,
-    discardPile: []
+    discardPile: [],
+    // Nilai awal setiap pemain selalu 0 pada awal permainan.
+    scores: Array.from({ length: playerCount }, () => 0)
   };
 }
 
@@ -625,6 +625,23 @@ function dealCards(playerCount = 4) {
   
 window.remiGame = dealCards(4);
 window.remiGame.selectedCardIndices = [];
+
+// Menampilkan skor berdasarkan satu sumber data: window.remiGame.scores.
+function renderScores() {
+  const scores = window.remiGame.scores;
+
+  document.querySelectorAll("[data-player-score]").forEach(element => {
+    const playerIndex = Number(element.dataset.playerScore);
+    const score = scores[playerIndex] ?? 0;
+
+    element.textContent =
+      element.classList.contains("score") ? `${score} poin` : String(score);
+  });
+}
+
+// Render skor awal ketika permainan dimuat.
+renderScores();
+
 window.remiGame.hasDrawn = false;
 window.remiGame.hasEatenThisTurn = false;
 
@@ -648,7 +665,7 @@ function updateTurnIndicator() {
   }
 
   // Jika permainan masih berlangsung.
-  indicator.textContent = game.currentPlayer === -1
+  indicator.textContent = game.currentPlayer === 0
     ? `🟢 Giliran Anda · Giliran ${game.turnNumber}`
     : `⏳ Giliran Pemain ${game.currentPlayer + 1} · Giliran ${game.turnNumber}`;
 }
