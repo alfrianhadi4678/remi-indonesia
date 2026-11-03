@@ -129,6 +129,19 @@
     transition: transform 0.12s ease;
     }
 
+    .card.selectable[draggable="true"] {
+    cursor: grab;
+    }
+
+    .card.dragging {
+    opacity: 0.45;
+    }
+
+    .card.drag-over {
+    outline: 2px dashed #e4bd54;
+    outline-offset: 3px;
+    }
+
     .card.selected {
     outline: 3px solid #e4bd54;
     transform: translateY(-8px);
@@ -417,7 +430,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.2.0.6</p>
+        <p class="game-version">V.2.0.7</p>
       </form>
     </div>
   </section>
@@ -540,7 +553,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.2.0</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.2.7</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1103,6 +1116,68 @@ function renderPlayerHand() {
   hand.forEach((card, index) => {
     const element = document.createElement("div");
     element.className = "card selectable";
+    element.draggable = game.currentPlayer === 0;
+    element.dataset.handIndex = String(index);
+
+    // Pindahkan posisi kartu dengan drag-and-drop tanpa mengubah isi kartu.
+    element.addEventListener("dragstart", event => {
+      if (game.currentPlayer !== 0) {
+        event.preventDefault();
+        return;
+      }
+
+      game.draggedCardIndex = index;
+      element.classList.add("dragging");
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", String(index));
+      }
+    });
+
+    element.addEventListener("dragend", () => {
+      game.draggedCardIndex = null;
+      handElement.querySelectorAll(".card").forEach(cardElement => {
+        cardElement.classList.remove("dragging", "drag-over");
+      });
+    });
+
+    element.addEventListener("dragover", event => {
+      if (game.currentPlayer !== 0 || !Number.isInteger(game.draggedCardIndex)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      element.classList.add("drag-over");
+    });
+
+    element.addEventListener("dragleave", () => {
+      element.classList.remove("drag-over");
+    });
+
+    element.addEventListener("drop", event => {
+      event.preventDefault();
+      element.classList.remove("drag-over");
+
+      const fromIndex = game.draggedCardIndex;
+      const toIndex = index;
+      if (!Number.isInteger(fromIndex) || fromIndex === toIndex) return;
+
+      const movedCard = hand.splice(fromIndex, 1)[0];
+      hand.splice(toIndex, 0, movedCard);
+
+      // Sesuaikan indeks kartu terpilih agar pilihan tetap menunjuk kartu yang sama.
+      game.selectedCardIndices = game.selectedCardIndices.map(selectedIndex => {
+        if (selectedIndex === fromIndex) return toIndex;
+        if (fromIndex < toIndex && selectedIndex > fromIndex && selectedIndex <= toIndex) {
+          return selectedIndex - 1;
+        }
+        if (toIndex < fromIndex && selectedIndex >= toIndex && selectedIndex < fromIndex) {
+          return selectedIndex + 1;
+        }
+        return selectedIndex;
+      });
+
+      game.draggedCardIndex = null;
+      renderPlayerHand();
+    });
 
     if (game.selectedCardIndices.includes(index)) {
       element.classList.add("selected");
@@ -1585,25 +1660,30 @@ document.getElementById("discard-button").addEventListener("click", () => {
   // Periksa persyaratan Tutup Biasa.
   const canTutupBiasa =
     game.hasOpenedInitialSeries[playerIndex] &&
-    remainingHand.length >= 3 &&
     tutupResult.valid;
 
   // Jika seluruh persyaratan Tutup Biasa terpenuhi.
   if (canTutupBiasa) {
 
-    // Buka semua kombinasi yang masih tersisa di tangan.
+    // Buka kombinasi yang masih tersisa di tangan, jika ada.
     const automaticMelds = tutupResult.melds.map(meld => ({
       type: meld.type,
       cards: [...meld.cards]
     }));
 
-    // Tandai kartu terakhir sebagai kartu penutup.
-    const lastMeld = automaticMelds[automaticMelds.length - 1];
-
-    lastMeld.closingCard = discarded;
-
-    // Simpan kombinasi pada area milik pemain.
+    // Simpan kombinasi baru pada area milik pemain.
     game.openMelds[playerIndex].push(...automaticMelds);
+
+    // Jika seluruh kartu sudah dibuka sebelumnya (misalnya hasil makan),
+    // gunakan kombinasi terakhir yang sudah terbuka untuk menandai penutup.
+    const allPlayerMelds = game.openMelds[playerIndex];
+    const closingMeld = automaticMelds.length > 0
+      ? automaticMelds[automaticMelds.length - 1]
+      : allPlayerMelds[allPlayerMelds.length - 1];
+
+    if (closingMeld) {
+      closingMeld.closingCard = discarded;
+    }
 
     // Catat kemenangan.
     game.winner = playerIndex;
