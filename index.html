@@ -489,9 +489,9 @@
       <section class="panel">
         <h3>Skor sementara</h3>
         <div class="player-score"><span>Anda</span><b data-player-score="0">0</b></div>
-        <div class="player-score"><span>Pemain 1</span><b data-player-score="1">0</b></div>
-        <div class="player-score"><span>Pemain 2</span><b data-player-score="2">0</b></div>
-        <div class="player-score"><span>Pemain 3</span><b data-player-score="3">0</b></div>
+        <div class="player-score"><span>Pemain 2</span><b data-player-score="1">0</b></div>
+        <div class="player-score"><span>Pemain 3</span><b data-player-score="2">0</b></div>
+        <div class="player-score"><span>Pemain 4</span><b data-player-score="3">0</b></div>
       </section>
 
       <section class="panel">
@@ -817,11 +817,11 @@ function validateMeld(cards, options = {}) {
   // Seri As: tepat 4 kartu.
   // Joker boleh membantu jika kombinasi berasal dari tangan pemain.
   if (
-    allowJokerInAceSeries &&
     cards.length === 4 &&
     normalCards.length >= 1 &&
     normalCards.every(card => card.value === 14) &&
-    new Set(normalCards.map(card => card.suit)).size === normalCards.length
+    new Set(normalCards.map(card => card.suit)).size === normalCards.length &&
+    (allowJokerInAceSeries || jokerCount === 0)
   ) {
     return {
       valid: true,
