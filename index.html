@@ -438,21 +438,21 @@
     <section class="table">
       <div class="opponents">
         <section class="player">
-          <h3>Pemain 1 <span class="score" data-player-score="1">0 poin</span></h3>
+          <h3>Pemain 2 <span class="score" data-player-score="1">0 poin</span></h3>
           <div class="cards" id="player-1-hand"></div>
           <p>Kombinasi terbuka</p>
           <div class="meld-area" id="player-1-melds"></div>
         </section>
 
         <section class="player">
-          <h3>Pemain 2 <span class="score" data-player-score="2">0 poin</span></h3>
+          <h3>Pemain 3 <span class="score" data-player-score="2">0 poin</span></h3>
           <div class="cards" id="player-2-hand"></div>
           <p>Kombinasi terbuka</p>
           <div class="meld-area" id="player-2-melds"></div>
         </section>
 
         <section class="player">
-          <h3>Pemain 3 <span class="score" data-player-score="3">0 poin</span></h3>
+          <h3>Pemain 4 <span class="score" data-player-score="3">0 poin</span></h3>
           <div class="cards" id="player-3-hand"></div>
           <p>Kombinasi terbuka</p>
           <div class="meld-area" id="player-3-melds"></div>
@@ -667,7 +667,7 @@ function updateTurnIndicator() {
   }
 
   // Jika permainan masih berlangsung.
-  indicator.textContent = game.currentPlayer === -1
+  indicator.textContent = game.currentPlayer === 0
     ? `🟢 Giliran Anda · Giliran ${game.turnNumber}`
     : `⏳ Giliran Pemain ${game.currentPlayer + 1} · Giliran ${game.turnNumber}`;
 }
