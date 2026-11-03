@@ -646,7 +646,7 @@ function updateTurnIndicator() {
   }
 
   // Jika permainan masih berlangsung.
-  indicator.textContent = game.currentPlayer === 0
+  indicator.textContent = game.currentPlayer === -1
     ? `🟢 Giliran Anda · Giliran ${game.turnNumber}`
     : `⏳ Giliran Pemain ${game.currentPlayer + 1} · Giliran ${game.turnNumber}`;
 }
