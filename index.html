@@ -132,6 +132,81 @@
       font-size: 17px;
     }
 
+    /* Muka kartu remi: dua indeks diagonal dan lambang besar di tengah. */
+    .card.face-card {
+      position: relative;
+      overflow: hidden;
+      padding: 3px;
+      isolation: isolate;
+    }
+    
+    .card-corner {
+      position: absolute;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      font-size: 11px;
+      line-height: .92;
+      font-weight: 800;
+      min-width: 10px;
+    }
+    
+    .card-corner.top {
+      top: 3px;
+      left: 4px;
+    }
+    
+    .card-corner.bottom {
+      right: 4px;
+      bottom: 3px;
+      transform: rotate(180deg);
+    }
+    
+    .card-corner .corner-suit {
+      font-size: 10px;
+    }
+    
+    .card-center-suit {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 25px;
+      line-height: 1;
+      font-weight: 500;
+    }
+    
+    .discard-ring-card.face-card {
+      font-size: 11px;
+    }
+    
+    .discard-ring-card .card-corner {
+      font-size: 9px;
+    }
+    
+    .discard-ring-card .card-corner .corner-suit {
+      font-size: 8px;
+    }
+    
+    .discard-ring-card .card-center-suit {
+      font-size: 20px;
+    }
+    
+    /* Penyesuaian ilustrasi Joker agar pas di dalam kartu. */
+    .joker-card .joker-label {
+      font-size: 9px;
+    }
+    
+    .joker-card .joker-art {
+      width: 92%;
+      max-height: 44px;
+      flex: 0 1 auto;
+    }
+
     
     .card.selectable {
     cursor: pointer;
@@ -1205,7 +1280,80 @@ document.getElementById("open-meld-button").addEventListener("click", () => {
   alert(`Kombinasi berhasil dibuka: ${result.type}`);
 });
 
-  
+function setCardFace(element, card) {
+  element.classList.add("face-card");
+
+  if (card.joker) {
+    element.classList.add("joker-card");
+    element.classList.add(
+      card.jokerColor === "red" ? "joker-red" : "joker-black"
+    );
+
+    element.innerHTML = `
+      <span class="joker-label">JOKER</span>
+      <svg class="joker-art" viewBox="0 0 100 120"
+           xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-label="Badut Joker">
+        <path d="M24 36 L9 12 L34 23 L42 7 L50 26
+                 L61 7 L68 25 L92 12 L78 43"
+          fill="${card.jokerColor === "red" ? "#b21d22" : "#222222"}"
+          stroke="#171717" stroke-width="3"
+          stroke-linejoin="round"/>
+
+        <path d="M28 36 Q50 20 72 36 L78 68
+                 Q50 91 22 68 Z"
+          fill="${card.jokerColor === "red" ? "#d92d30" : "#333333"}"
+          stroke="#171717" stroke-width="3"/>
+
+        <ellipse cx="50" cy="49" rx="22" ry="27"
+          fill="#fff0d5" stroke="#171717" stroke-width="2"/>
+
+        <path d="M30 41 L43 44 M57 44 L70 41"
+          stroke="#171717" stroke-width="3"
+          stroke-linecap="round"/>
+
+        <ellipse cx="40" cy="48" rx="3" ry="4" fill="#171717"/>
+        <ellipse cx="60" cy="48" rx="3" ry="4" fill="#171717"/>
+
+        <circle cx="29" cy="56" r="6" fill="#d92d30"/>
+        <circle cx="71" cy="56" r="6" fill="#d92d30"/>
+
+        <path d="M39 62 Q50 77 61 62 Q50 68 39 62"
+          fill="#ffffff" stroke="#171717" stroke-width="2"/>
+
+        <path d="M26 86 L50 101 L74 86
+                 L68 112 L50 104 L32 112 Z"
+          fill="${card.jokerColor === "red" ? "#b21d22" : "#222222"}"
+          stroke="#171717" stroke-width="2"/>
+
+        <circle cx="50" cy="91" r="4" fill="#e6b84a"/>
+      </svg>
+    `;
+
+    return;
+  }
+
+  if (card.color === "red") {
+    element.classList.add("red");
+  }
+
+  const label = String(card.label ?? "");
+  const suit = String(card.suit ?? "");
+
+  element.innerHTML = `
+    <span class="card-corner top">
+      <span>${label}</span>
+      <span class="corner-suit">${suit}</span>
+    </span>
+
+    <span class="card-center-suit">${suit}</span>
+
+    <span class="card-corner bottom">
+      <span>${label}</span>
+      <span class="corner-suit">${suit}</span>
+    </span>
+  `;
+}  
 
 function renderPlayerHand() {
   const handElement = document.getElementById("player-hand");
@@ -1317,45 +1465,7 @@ function renderPlayerHand() {
       element.classList.add("red");
     }
 
-    if (card.joker) {
-      element.classList.add("joker-card");
-      element.classList.add(
-        card.jokerColor === "red" ? "joker-red" : "joker-black"
-      );
-
-      element.innerHTML = `
-        <span class="joker-label">JOKER</span>
-        <svg class="joker-art" viewBox="0 0 100 120"
-             xmlns="http://www.w3.org/2000/svg"
-             role="img" aria-label="Badut Joker">
-          <path d="M24 36 L9 12 L34 23 L42 7 L50 26
-                   L61 7 L68 25 L92 12 L78 43"
-                fill="${card.jokerColor === "red" ? "#b21d22" : "#222222"}"
-                stroke="#171717" stroke-width="3"
-                stroke-linejoin="round"/>
-          <path d="M28 36 Q50 20 72 36 L78 68
-                   Q50 91 22 68 Z"
-                fill="${card.jokerColor === "red" ? "#d92d30" : "#333333"}"
-                stroke="#171717" stroke-width="3"/>
-          <ellipse cx="50" cy="49" rx="22" ry="27"
-                   fill="#fff0d5" stroke="#171717" stroke-width="2"/>
-          <path d="M30 41 L43 44 M57 44 L70 41"
-                stroke="#171717" stroke-width="3" stroke-linecap="round"/>
-          <ellipse cx="40" cy="48" rx="3" ry="4" fill="#171717"/>
-          <ellipse cx="60" cy="48" rx="3" ry="4" fill="#171717"/>
-          <circle cx="29" cy="56" r="6" fill="#d92d30"/>
-          <circle cx="71" cy="56" r="6" fill="#d92d30"/>
-          <path d="M39 62 Q50 77 61 62 Q50 68 39 62"
-                fill="#ffffff" stroke="#171717" stroke-width="2"/>
-          <path d="M26 86 L50 101 L74 86 L68 112 L50 104 L32 112 Z"
-                fill="${card.jokerColor === "red" ? "#b21d22" : "#222222"}"
-                stroke="#171717" stroke-width="2"/>
-          <circle cx="50" cy="91" r="4" fill="#e6b84a"/>
-        </svg>
-      `;
-    } else {
-      element.textContent = `${card.label}${card.suit}`;
-    }
+    setCardFace(element, card);
 
     handElement.appendChild(element);
   });
@@ -1404,49 +1514,7 @@ function renderOpenMelds() {
         const cardElement = document.createElement("div");
         cardElement.className = "card";
 
-        if (card.color === "red") {
-          cardElement.classList.add("red");
-        }
-
-        if (card.joker) {
-          cardElement.classList.add("joker-card");
-          cardElement.classList.add(
-            card.jokerColor === "red" ? "joker-red" : "joker-black"
-          );
-
-          cardElement.innerHTML = `
-            <span class="joker-label">JOKER</span>
-            <svg class="joker-art" viewBox="0 0 100 120"
-                 xmlns="http://www.w3.org/2000/svg"
-                 role="img" aria-label="Badut Joker">
-              <path d="M24 36 L9 12 L34 23 L42 7 L50 26
-                       L61 7 L68 25 L92 12 L78 43"
-                    fill="${card.jokerColor === "red" ? "#b21d22" : "#222222"}"
-                    stroke="#171717" stroke-width="3"
-                    stroke-linejoin="round"/>
-              <path d="M28 36 Q50 20 72 36 L78 68
-                       Q50 91 22 68 Z"
-                    fill="${card.jokerColor === "red" ? "#d92d30" : "#333333"}"
-                    stroke="#171717" stroke-width="3"/>
-              <ellipse cx="50" cy="49" rx="22" ry="27"
-                       fill="#fff0d5" stroke="#171717" stroke-width="2"/>
-              <path d="M30 41 L43 44 M57 44 L70 41"
-                    stroke="#171717" stroke-width="3" stroke-linecap="round"/>
-              <ellipse cx="40" cy="48" rx="3" ry="4" fill="#171717"/>
-              <ellipse cx="60" cy="48" rx="3" ry="4" fill="#171717"/>
-              <circle cx="29" cy="56" r="6" fill="#d92d30"/>
-              <circle cx="71" cy="56" r="6" fill="#d92d30"/>
-              <path d="M39 62 Q50 77 61 62 Q50 68 39 62"
-                    fill="#ffffff" stroke="#171717" stroke-width="2"/>
-              <path d="M26 86 L50 101 L74 86 L68 112 L50 104 L32 112 Z"
-                    fill="${card.jokerColor === "red" ? "#b21d22" : "#222222"}"
-                    stroke="#171717" stroke-width="2"/>
-              <circle cx="50" cy="91" r="4" fill="#e6b84a"/>
-            </svg>
-          `;
-        } else {
-          cardElement.textContent = `${card.label}${card.suit}`;
-        }
+        setCardFace(cardElement, card);
 
         cardsElement.appendChild(cardElement);
       });
@@ -1561,19 +1629,7 @@ function renderOpponentHands() {
       if (window.gameMode === "develop") {
         cardElement.className = "card";
 
-        if (card.color === "red") {
-          cardElement.classList.add("red");
-        }
-
-        if (card.joker) {
-          cardElement.classList.add("joker-card");
-          cardElement.classList.add(
-            card.jokerColor === "red" ? "joker-red" : "joker-black"
-          );
-          cardElement.textContent = "JOKER";
-        } else {
-          cardElement.textContent = `${card.label}${card.suit}`;
-        }
+        setCardFace(cardElement, card);
 
         cardElement.classList.add("selectable");
         cardElement.draggable = true;
@@ -1776,9 +1832,7 @@ function renderDiscardPile() {
 
       element.style.zIndex = String(index + 1);
 
-      if (card.color === "red") {
-        element.classList.add("red");
-      }
+      setCardFace(element, card);
 
       // Joker tidak dapat masuk Discard Pile.
       element.textContent = `${card.label}${card.suit}`;
