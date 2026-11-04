@@ -148,7 +148,7 @@
       align-items: center;
       justify-content: center;
       gap: 0;
-      font-size: 11px;
+      font-size: 14px;
       line-height: .92;
       font-weight: 800;
       min-width: 10px;
@@ -166,7 +166,7 @@
     }
     
     .card-corner .corner-suit {
-      font-size: 10px;
+      font-size: 12px;
     }
     
     .card-center-suit {
@@ -1784,7 +1784,9 @@ function renderDiscardPile() {
   const cardHeight = compact ? 54 : 62;
   const cardWidth = compact ? 36 : 43;
 
-  const angleStep = 360 / DISCARD_CAPACITY;
+  const DISCARD_ARC = 342; // 95% dari 360 derajat
+
+  const angleStep = DISCARD_ARC / (DISCARD_CAPACITY - 1);
 
   // Jarak antarpusat kartu sekitar setengah tinggi kartu.
   const halfOverlapSpacing = cardHeight * 0.5;
@@ -1801,7 +1803,7 @@ function renderDiscardPile() {
   const radiusY = radius;
 
   // Kartu pertama dimulai dari kanan-atas Draw Pile.
-  const startAngle = -55;
+  const startAngle = -90;
 
   game.discardPile
     .slice(0, DISCARD_CAPACITY)
