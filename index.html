@@ -159,7 +159,8 @@
 
     .red { color: #d62929; }
 
-    /* Area tengah meja: Draw Pile menjadi pusat, Discard Pile mengitarinya. */
+    /* Area tengah meja: Draw Pile menjadi pusat, satu tumpukan Discard Pile
+       bergerak mengelilinginya. Kartu lama tetap bertumpuk di bawah kartu baru. */
     .middle {
       position: relative;
       display: flex;
@@ -233,19 +234,22 @@
       width: 43px;
       height: 62px;
       margin: 0;
-      padding: 4px;
-      transform: translate(-50%, -50%) rotate(var(--card-angle));
+      padding: 2px;
+      transform: translate(-50%, -50%);
       transform-origin: center;
       box-shadow: 0 2px 5px rgba(0, 0, 0, .4);
       pointer-events: auto;
       cursor: pointer;
-      font-size: 15px;
+      justify-content: flex-start;
+      line-height: 1;
+      font-size: 13px;
     }
 
     #discard-cards .discard-ring-card.selected {
       outline: 3px solid #e4bd54;
       outline-offset: 2px;
       filter: brightness(1.08);
+      transform: translate(-50%, -50%) translateY(-5px);
     }
 
     #discard-pile h3,
@@ -344,7 +348,7 @@
       .card { width: 36px; height: 54px; font-size: 14px; }
       .middle { min-height: 280px; width: 100%; }
       #draw-pile { transform: scale(.88); }
-      #discard-cards .discard-ring-card { width: 36px; height: 54px; font-size: 13px; }
+      #discard-cards .discard-ring-card { width: 36px; height: 54px; font-size: 11px; }
       #discard-pile h3 { top: calc(50% + 115px); }
       #discard-pile #discard-count { top: calc(50% + 132px); }
     }
@@ -533,7 +537,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.0</p>
+        <p class="game-version">V.3.0.1</p>
       </form>
     </div>
   </section>
@@ -656,7 +660,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.0</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3..0.1</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1711,27 +1715,36 @@ function renderDiscardPile() {
   const total = game.discardPile.length;
   if (total === 0) return;
 
-  // Kartu disusun mengitari Draw Pile. Kartu berikutnya berada di atas
-  // kartu sebelumnya; jarak sudut membuat tumpukan semakin rapat saat penuh.
+  // Hanya ADA SATU tumpukan Discard Pile.
+  // Setiap kartu baru menutupi kartu sebelumnya; kartu lama menyisakan
+  // bagian atasnya agar nilai/simbol masih dapat dikenali.
+  // Posisi seluruh tumpukan bergeser searah jarum jam mengelilingi Draw Pile.
   const stage = document.querySelector(".middle");
   const stageWidth = stage ? stage.clientWidth : 600;
   const compact = window.matchMedia("(max-width: 480px)").matches;
   const radiusX = Math.min(compact ? 112 : 150, stageWidth * (compact ? 0.36 : 0.31));
-  const radiusY = compact ? 86 : 94;
+  const radiusY = compact ? 82 : 100;
   const startAngle = -90;
+  const clockwiseStep = 12;
+  const currentAngle = startAngle + ((total - 1) * clockwiseStep);
+  const radians = currentAngle * Math.PI / 180;
+  const stackX = Math.cos(radians) * radiusX;
+  const stackY = Math.sin(radians) * radiusY;
+  const cardHeight = compact ? 54 : 62;
+  const visibleStrip = compact ? 14 : 17;
+  const stackStep = Math.min(visibleStrip, Math.max(3, (cardHeight + 24) / Math.max(1, total - 1)));
 
   game.discardPile.forEach((card, index) => {
-    const angle = startAngle + (index * 360 / total);
-    const radians = angle * Math.PI / 180;
-    const x = Math.cos(radians) * radiusX;
-    const y = Math.sin(radians) * radiusY;
+    // Kartu paling baru berada di depan. Kartu lama bergeser ke atas
+    // sedikit demi sedikit sehingga bagian pojok atasnya tetap terlihat.
+    const age = total - 1 - index;
+    const yOffset = -age * stackStep;
 
     const element = document.createElement("div");
     element.className = "card discard-ring-card";
     element.dataset.discardIndex = index;
-    element.style.left = `calc(50% + ${x}px)`;
-    element.style.top = `calc(50% + ${y}px)`;
-    element.style.setProperty("--card-angle", `${angle + 90}deg`);
+    element.style.left = `calc(50% + ${stackX}px)`;
+    element.style.top = `calc(50% + ${stackY + yOffset}px)`;
     element.style.zIndex = String(index + 1);
 
     if (card.color === "red") {
