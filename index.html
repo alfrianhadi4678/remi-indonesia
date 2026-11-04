@@ -159,20 +159,108 @@
 
     .red { color: #d62929; }
 
+    /* Area tengah meja: Draw Pile menjadi pusat, Discard Pile mengitarinya. */
     .middle {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin: 18px 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 310px;
+      margin: 20px auto;
+      width: min(100%, 620px);
+      isolation: isolate;
     }
 
     .pile {
-      min-height: 135px;
       text-align: center;
-      padding: 18px 8px;
-      background: #06432f;
-      border: 1px dashed #83b69c;
+      padding: 8px;
+      background: transparent;
+      border: 0;
       border-radius: 12px;
+    }
+
+    #draw-pile {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 116px;
+      min-height: 150px;
+      padding: 10px 6px;
+      border: 1px solid rgba(131, 182, 156, .45);
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(5, 67, 47, .98), rgba(5, 67, 47, .28));
+      box-shadow: 0 0 24px rgba(0, 25, 16, .25);
+    }
+
+    #draw-pile .back {
+      margin: 0 auto 7px;
+    }
+
+    #draw-pile h3, #discard-pile h3 {
+      margin: 3px 0;
+      font-size: 13px;
+      text-shadow: 0 1px 3px #002b1e;
+    }
+
+    #draw-count, #discard-count {
+      margin: 2px 0;
+      font-size: 11px;
+      color: #d5e6dc;
+    }
+
+    #discard-pile {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    #discard-cards {
+      position: absolute;
+      inset: 0;
+      display: block;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    #discard-cards .discard-ring-card {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 43px;
+      height: 62px;
+      margin: 0;
+      padding: 4px;
+      transform: translate(-50%, -50%) rotate(var(--card-angle));
+      transform-origin: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, .4);
+      pointer-events: auto;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    #discard-cards .discard-ring-card.selected {
+      outline: 3px solid #e4bd54;
+      outline-offset: 2px;
+      filter: brightness(1.08);
+    }
+
+    #discard-pile h3,
+    #discard-pile #discard-count {
+      position: absolute;
+      left: 50%;
+      top: calc(50% + 126px);
+      width: 150px;
+      transform: translateX(-50%);
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    #discard-pile #discard-count {
+      top: calc(50% + 145px);
     }
 
     .back {
@@ -247,12 +335,18 @@
       .layout { grid-template-columns: 1fr; }
       .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .opponents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .middle { min-height: 290px; }
     }
 
     @media (max-width: 480px) {
       .opponents, .sidebar { grid-template-columns: 1fr; }
       .table { padding: 9px; }
       .card { width: 36px; height: 54px; font-size: 14px; }
+      .middle { min-height: 280px; width: 100%; }
+      #draw-pile { transform: scale(.88); }
+      #discard-cards .discard-ring-card { width: 36px; height: 54px; font-size: 13px; }
+      #discard-pile h3 { top: calc(50% + 115px); }
+      #discard-pile #discard-count { top: calc(50% + 132px); }
     }
 
     
@@ -508,18 +602,17 @@
         </section>
       </div>
 
-      <div class="middle">
+      <div class="middle" aria-label="Area Draw Pile dan Discard Pile">
         <div class="pile" id="draw-pile">
-        <div class="back">✦</div>
-        <h3>Draw Pile</h3>
-        <p id="draw-count">Kartu tertutup</p>
-      </div>
+          <div class="back">✦</div>
+          <h3>Draw Pile</h3>
+          <p id="draw-count">Kartu tertutup</p>
+        </div>
 
-      <div class="pile" id="discard-pile">
-        <div class="cards" id="discard-cards"
-         style="justify-content:center"></div>
-        <h3>Discard Pile</h3>
-        <p id="discard-count">Belum ada kartu</p>
+        <div class="pile" id="discard-pile">
+          <div id="discard-cards"></div>
+          <h3>Discard Pile</h3>
+          <p id="discard-count">Belum ada kartu</p>
         </div>
       </div>
 
@@ -1597,7 +1690,7 @@ function renderDiscardPile() {
 
   if (!discardCards) return;
 
-  // Simpan hanya pilihan yang indeksnya masih valid.
+  // Pilihan hanya boleh berasal dari tujuh kartu buangan paling baru.
   if (!Array.isArray(game.selectedDiscardIndices)) {
     game.selectedDiscardIndices = [];
   }
@@ -1608,7 +1701,6 @@ function renderDiscardPile() {
     index < game.discardPile.length
   );
 
-  // Sinkronkan variabel lama dengan daftar pilihan baru.
   game.selectedDiscardIndex =
     game.selectedDiscardIndices.length === 1
       ? game.selectedDiscardIndices[0]
@@ -1616,40 +1708,53 @@ function renderDiscardPile() {
 
   discardCards.replaceChildren();
 
+  const total = game.discardPile.length;
+  if (total === 0) return;
+
+  // Kartu disusun mengitari Draw Pile. Kartu berikutnya berada di atas
+  // kartu sebelumnya; jarak sudut membuat tumpukan semakin rapat saat penuh.
+  const stage = document.querySelector(".middle");
+  const stageWidth = stage ? stage.clientWidth : 600;
+  const compact = window.matchMedia("(max-width: 480px)").matches;
+  const radiusX = Math.min(compact ? 112 : 150, stageWidth * (compact ? 0.36 : 0.31));
+  const radiusY = compact ? 86 : 94;
+  const startAngle = -90;
+
   game.discardPile.forEach((card, index) => {
+    const angle = startAngle + (index * 360 / total);
+    const radians = angle * Math.PI / 180;
+    const x = Math.cos(radians) * radiusX;
+    const y = Math.sin(radians) * radiusY;
+
     const element = document.createElement("div");
-    element.className = "card";
+    element.className = "card discard-ring-card";
     element.dataset.discardIndex = index;
+    element.style.left = `calc(50% + ${x}px)`;
+    element.style.top = `calc(50% + ${y}px)`;
+    element.style.setProperty("--card-angle", `${angle + 90}deg`);
+    element.style.zIndex = String(index + 1);
 
     if (card.color === "red") {
       element.classList.add("red");
     }
 
-    element.textContent = card.joker
-      ? "JOKER"
-      : `${card.label}${card.suit}`;
+    // Joker tidak dapat masuk Discard Pile menurut aturan permainan.
+    element.textContent = `${card.label}${card.suit}`;
 
-    element.style.cursor = "pointer";
-
-    // Pertahankan indikator pilihan ketika Discard Pile digambar ulang.
     if (game.selectedDiscardIndices.includes(index)) {
       element.classList.add("selected");
     }
 
     element.addEventListener("click", () => {
-      if (game.hasDrawn || game.hasEatenThisTurn) {
-      return;
-    }
+      if (game.hasDrawn || game.hasEatenThisTurn) return;
 
       const batasBawah = Math.max(0, game.discardPile.length - 7);
-
       if (index < batasBawah) {
         alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
         return;
       }
 
       const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
-
       if (posisiPilihan !== -1) {
         game.selectedDiscardIndices.splice(posisiPilihan, 1);
       } else {
@@ -1657,7 +1762,6 @@ function renderDiscardPile() {
           alert("Maksimal pilih 2 kartu Discard Pile.");
           return;
         }
-
         game.selectedDiscardIndices.push(index);
       }
 
@@ -1666,13 +1770,8 @@ function renderDiscardPile() {
           ? game.selectedDiscardIndices[0]
           : null;
 
-      // Gambar ulang agar semua kartu pilihan mendapat indikator.
       renderDiscardPile();
-
-      console.log(
-        "Kartu Discard Pile yang dipilih:",
-        game.selectedDiscardIndices
-      );
+      console.log("Kartu Discard Pile yang dipilih:", game.selectedDiscardIndices);
     });
 
     discardCards.appendChild(element);
