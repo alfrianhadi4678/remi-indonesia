@@ -346,11 +346,11 @@
       .opponents, .sidebar { grid-template-columns: 1fr; }
       .table { padding: 9px; }
       .card { width: 36px; height: 54px; font-size: 14px; }
-      .middle { min-height: 280px; width: 100%; }
+      .middle { min-height: 390px; width: 100%; }
       #draw-pile { transform: scale(.88); }
       #discard-cards .discard-ring-card { width: 36px; height: 54px; font-size: 11px; }
-      #discard-pile h3 { top: calc(50% + 115px); }
-      #discard-pile #discard-count { top: calc(50% + 132px); }
+      #discard-pile h3 { top: calc(50% + 155px); }
+      #discard-pile #discard-count { top: calc(50% + 173px); }
     }
 
     
@@ -537,7 +537,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.1</p>
+        <p class="game-version">V.3.0.2</p>
       </form>
     </div>
   </section>
@@ -1687,14 +1687,18 @@ function updatePileCounts() {
   }
 }
 
-
 function renderDiscardPile() {
   const game = window.remiGame;
   const discardCards = document.getElementById("discard-cards");
 
   if (!discardCards) return;
 
-  // Pilihan hanya boleh berasal dari tujuh kartu buangan paling baru.
+  // Maksimal 28 kartu buangan:
+  // 56 kartu (52 + 4 Joker) dikurangi 28 kartu awal.
+  // Dengan 2 Joker, kapasitas nyata hanya 26 kartu.
+  const DISCARD_CAPACITY = 28;
+
+  // Hanya tujuh kartu buangan terbaru yang boleh dipilih.
   if (!Array.isArray(game.selectedDiscardIndices)) {
     game.selectedDiscardIndices = [];
   }
@@ -1715,80 +1719,120 @@ function renderDiscardPile() {
   const total = game.discardPile.length;
   if (total === 0) return;
 
-  // Hanya ADA SATU tumpukan Discard Pile.
-  // Setiap kartu baru menutupi kartu sebelumnya; kartu lama menyisakan
-  // bagian atasnya agar nilai/simbol masih dapat dikenali.
-  // Posisi seluruh tumpukan bergeser searah jarum jam mengelilingi Draw Pile.
+  // Area Discard Pile memiliki 28 posisi tetap.
+  // Kartu lama tidak bergeser saat kartu baru dibuang.
   const stage = document.querySelector(".middle");
   const stageWidth = stage ? stage.clientWidth : 600;
   const compact = window.matchMedia("(max-width: 480px)").matches;
-  const radiusX = Math.min(compact ? 112 : 150, stageWidth * (compact ? 0.36 : 0.31));
-  const radiusY = compact ? 82 : 100;
-  const startAngle = -90;
-  const clockwiseStep = 12;
-  const currentAngle = startAngle + ((total - 1) * clockwiseStep);
-  const radians = currentAngle * Math.PI / 180;
-  const stackX = Math.cos(radians) * radiusX;
-  const stackY = Math.sin(radians) * radiusY;
+
   const cardHeight = compact ? 54 : 62;
-  const visibleStrip = compact ? 14 : 17;
-  const stackStep = Math.min(visibleStrip, Math.max(3, (cardHeight + 24) / Math.max(1, total - 1)));
+  const cardWidth = compact ? 36 : 43;
 
-  game.discardPile.forEach((card, index) => {
-    // Kartu paling baru berada di depan. Kartu lama bergeser ke atas
-    // sedikit demi sedikit sehingga bagian pojok atasnya tetap terlihat.
-    const age = total - 1 - index;
-    const yOffset = -age * stackStep;
+  const angleStep = 360 / DISCARD_CAPACITY;
 
-    const element = document.createElement("div");
-    element.className = "card discard-ring-card";
-    element.dataset.discardIndex = index;
-    element.style.left = `calc(50% + ${stackX}px)`;
-    element.style.top = `calc(50% + ${stackY + yOffset}px)`;
-    element.style.zIndex = String(index + 1);
+  // Jarak antarpusat kartu sekitar setengah tinggi kartu.
+  const halfOverlapSpacing = cardHeight * 0.5;
 
-    if (card.color === "red") {
-      element.classList.add("red");
-    }
+  const radius =
+    halfOverlapSpacing /
+    (2 * Math.sin(Math.PI / DISCARD_CAPACITY));
 
-    // Joker tidak dapat masuk Discard Pile menurut aturan permainan.
-    element.textContent = `${card.label}${card.suit}`;
+  const radiusX = Math.min(
+    radius,
+    (stageWidth - cardWidth - 16) / 2
+  );
 
-    if (game.selectedDiscardIndices.includes(index)) {
-      element.classList.add("selected");
-    }
+  const radiusY = radius;
 
-    element.addEventListener("click", () => {
-      if (game.hasDrawn || game.hasEatenThisTurn) return;
+  // Kartu pertama dimulai dari kanan-atas Draw Pile.
+  const startAngle = -55;
 
-      const batasBawah = Math.max(0, game.discardPile.length - 7);
-      if (index < batasBawah) {
-        alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
-        return;
+  game.discardPile
+    .slice(0, DISCARD_CAPACITY)
+    .forEach((card, index) => {
+
+      // Posisi ditentukan oleh nomor urut kartu.
+      // Penambahan kartu baru tidak mengubah posisi kartu lama.
+      const angle = startAngle + (index * angleStep);
+      const radians = angle * Math.PI / 180;
+
+      const x = Math.cos(radians) * radiusX;
+      const y = Math.sin(radians) * radiusY;
+
+      const rotation = Math.sin(radians) * 12;
+
+      const element = document.createElement("div");
+
+      element.className = "card discard-ring-card";
+      element.dataset.discardIndex = index;
+
+      element.style.left = `calc(50% + ${x}px)`;
+      element.style.top = `calc(50% + ${y}px)`;
+
+      element.style.setProperty(
+        "--card-rotation",
+        `${rotation}deg`
+      );
+
+      element.style.zIndex = String(index + 1);
+
+      if (card.color === "red") {
+        element.classList.add("red");
       }
 
-      const posisiPilihan = game.selectedDiscardIndices.indexOf(index);
-      if (posisiPilihan !== -1) {
-        game.selectedDiscardIndices.splice(posisiPilihan, 1);
-      } else {
-        if (game.selectedDiscardIndices.length >= 2) {
-          alert("Maksimal pilih 2 kartu Discard Pile.");
+      // Joker tidak dapat masuk Discard Pile.
+      element.textContent = `${card.label}${card.suit}`;
+
+      if (game.selectedDiscardIndices.includes(index)) {
+        element.classList.add("selected");
+      }
+
+      element.addEventListener("click", () => {
+
+        if (game.hasDrawn || game.hasEatenThisTurn) return;
+
+        const batasBawah = Math.max(
+          0,
+          game.discardPile.length - 7
+        );
+
+        if (index < batasBawah) {
+          alert("Kartu yang bisa dimakan hanya 7 kartu teratas.");
           return;
         }
-        game.selectedDiscardIndices.push(index);
-      }
 
-      game.selectedDiscardIndex =
-        game.selectedDiscardIndices.length === 1
-          ? game.selectedDiscardIndices[0]
-          : null;
+        const posisiPilihan =
+          game.selectedDiscardIndices.indexOf(index);
 
-      renderDiscardPile();
-      console.log("Kartu Discard Pile yang dipilih:", game.selectedDiscardIndices);
+        if (posisiPilihan !== -1) {
+
+          game.selectedDiscardIndices.splice(posisiPilihan, 1);
+
+        } else {
+
+          if (game.selectedDiscardIndices.length >= 2) {
+            alert("Maksimal pilih 2 kartu Discard Pile.");
+            return;
+          }
+
+          game.selectedDiscardIndices.push(index);
+        }
+
+        game.selectedDiscardIndex =
+          game.selectedDiscardIndices.length === 1
+            ? game.selectedDiscardIndices[0]
+            : null;
+
+        renderDiscardPile();
+
+        console.log(
+          "Kartu Discard Pile yang dipilih:",
+          game.selectedDiscardIndices
+        );
+      });
+
+      discardCards.appendChild(element);
     });
-
-    discardCards.appendChild(element);
-  });
 }
 
 
