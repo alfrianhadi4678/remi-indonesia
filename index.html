@@ -180,20 +180,27 @@
       font-weight: 500;
     }
     
+    /* Ukuran khusus kartu Discard Pile */
+    .discard-ring-card {
+      width: 50px;
+      height: 72px;
+      padding: 3px;
+    }
+    
     .discard-ring-card.face-card {
-      font-size: 12px;
+      font-size: 14px;
     }
     
     .discard-ring-card .card-corner {
-      font-size: 11px;
+      font-size: 15px;
     }
     
     .discard-ring-card .card-corner .corner-suit {
-      font-size: 10px;
+      font-size: 13px;
     }
     
     .discard-ring-card .card-center-suit {
-      font-size: 20px;
+      font-size: 24px;
     }
     
     /* Penyesuaian ilustrasi Joker agar pas di dalam kartu. */
@@ -423,7 +430,7 @@
       .card { width: 36px; height: 54px; font-size: 14px; }
       .middle { min-height: 390px; width: 100%; }
       #draw-pile { transform: scale(.88); }
-      #discard-cards .discard-ring-card { width: 36px; height: 54px; font-size: 11px; }
+      #discard-cards .discard-ring-card { width: 42px; height: 63px; font-size: 12px; }
       #discard-pile h3 { top: calc(50% + 155px); }
       #discard-pile #discard-count { top: calc(50% + 173px); }
     }
@@ -612,7 +619,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.6</p>
+        <p class="game-version">V.3.0.7</p>
       </form>
     </div>
   </section>
@@ -735,7 +742,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.6</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.7</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1781,15 +1788,15 @@ function renderDiscardPile() {
   const stageWidth = stage ? stage.clientWidth : 600;
   const compact = window.matchMedia("(max-width: 480px)").matches;
 
-  const cardHeight = compact ? 54 : 62;
-  const cardWidth = compact ? 36 : 43;
+  const cardHeight = compact ? 63 : 72;
+  const cardWidth = compact ? 42 : 50;
 
   const DISCARD_ARC = 342; // 95% dari 360 derajat
 
   const angleStep = DISCARD_ARC / (DISCARD_CAPACITY - 1);
 
-  // Jarak antarpusat kartu sekitar setengah tinggi kartu.
-  const halfOverlapSpacing = cardHeight * 0.5;
+  // Jarak antarpusat kartu sekitar 70% tinggi kartu.
+  const halfOverlapSpacing = cardHeight * 0.7;
 
   const radius =
     halfOverlapSpacing /
