@@ -34,19 +34,24 @@
     }
 
     .table {
-      min-width: 0;
-      padding: 18px;
-      background: #07533c;
-      border: 6px solid #684b2b;
-      border-radius: 24px;
-      box-shadow: inset 0 0 25px #002b1e;
+    display: grid;
+    grid-template-columns:
+      minmax(115px, 0.75fr)
+      minmax(300px, 2fr)
+      minmax(115px, 0.75fr);
+    grid-template-rows: auto minmax(310px, auto) auto auto;
+    gap: 12px;
+  
+    min-width: 0;
+    padding: 18px;
+    background: #07533c;
+    border: 6px solid #684b2b;
+    border-radius: 24px;
+    box-shadow: inset 0 0 25px #002b1e;
     }
 
     .opponents {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(130px, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
+    display: contents;
     }
 
     .player, .panel {
@@ -75,13 +80,85 @@
       gap: 12px;
     }
 
-    .meld {
-      position: relative;
-      background: #0b3026;
-      border: 1px solid #b99c58;
-      border-radius: 8px;
-      padding: 8px;
+    .meld-area {
+      min-height: 85px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 12px;
+    }
+    
+    /* Pemain 2 dan 4: kelompok kombinasi tersusun ke bawah */
+    .opponents > .player:nth-child(1) .meld-area,
+    .opponents > .player:nth-child(3) .meld-area {
+      flex-direction: column;
+    }
+    
+    /* Setiap kelompok kombinasi tetap menampilkan kartu horizontal */
+    .opponents > .player:nth-child(1) .meld,
+    .opponents > .player:nth-child(3) .meld {
+      width: fit-content;
       max-width: 100%;
+    }
+    
+    /* Pemain 2 dan 4: kelompok kombinasi tersusun ke bawah */
+    .opponents > .player:nth-child(1) .meld-area,
+    .opponents > .player:nth-child(3) .meld-area {
+      flex-direction: column;
+    }
+    
+    /* Setiap kelompok kombinasi tetap menampilkan kartu horizontal */
+    .opponents > .player:nth-child(1) .meld,
+    .opponents > .player:nth-child(3) .meld {
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    /* Posisi pemain mengelilingi bagian tengah meja */
+
+    /* Pemain 2: sisi kiri */
+    .opponents > .player:nth-child(1) {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    
+    /* Pemain 3: sisi atas */
+    .opponents > .player:nth-child(2) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    
+    /* Pemain 4: sisi kanan */
+    .opponents > .player:nth-child(3) {
+      grid-column: 3;
+      grid-row: 2;
+    }
+    
+    /* Kartu tangan pemain 2 dan 4 disusun vertikal */
+    .opponents > .player:nth-child(1) > .cards,
+    .opponents > .player:nth-child(3) > .cards {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    /* Draw Pile dan Discard Pile tetap di tengah */
+    .table > .middle {
+      grid-column: 2;
+      grid-row: 2;
+      width: 100%;
+      margin: 0;
+    }
+    
+    /* Kombinasi milik Anda berada di bagian bawah */
+    .table > .player {
+      grid-column: 1 / -1;
+      grid-row: 3;
+    }
+    
+    /* Kartu tangan Anda berada paling bawah */
+    .table > .hand {
+      grid-column: 1 / -1;
+      grid-row: 4;
     }
 
     /* Kartu penutup pada Tutup Tangan */
@@ -418,21 +495,87 @@
     }
 
     @media (max-width: 850px) {
-      .layout { grid-template-columns: 1fr; }
-      .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .opponents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .middle { min-height: 290px; }
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    
+      .sidebar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    
+      .table {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+      }
+    
+      /* Kembalikan panel pemain ke susunan bertumpuk */
+      .opponents > .player {
+        grid-column: 1;
+        grid-row: auto;
+      }
+    
+      .table > .middle,
+      .table > .player,
+      .table > .hand {
+        grid-column: 1;
+        grid-row: auto;
+      }
+    
+      /* Kartu tangan pemain lawan kembali horizontal di layar sempit */
+      .opponents > .player:nth-child(1) > .cards,
+      .opponents > .player:nth-child(3) > .cards {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+    
+      .opponents > .player:nth-child(1) .meld-area,
+      .opponents > .player:nth-child(3) .meld-area {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+    
+      .middle {
+        min-height: 290px;
+      }
     }
 
     @media (max-width: 480px) {
-      .opponents, .sidebar { grid-template-columns: 1fr; }
-      .table { padding: 9px; }
-      .card { width: 36px; height: 54px; font-size: 14px; }
-      .middle { min-height: 390px; width: 100%; }
-      #draw-pile { transform: scale(.88); }
-      #discard-cards .discard-ring-card { width: 42px; height: 63px; font-size: 12px; }
-      #discard-pile h3 { top: calc(50% + 155px); }
-      #discard-pile #discard-count { top: calc(50% + 173px); }
+      .sidebar {
+        grid-template-columns: 1fr;
+      }
+    
+      .table {
+        padding: 9px;
+      }
+    
+      .card {
+        width: 36px;
+        height: 54px;
+        font-size: 14px;
+      }
+    
+      .middle {
+        min-height: 390px;
+        width: 100%;
+      }
+    
+      #draw-pile {
+        transform: scale(.88);
+      }
+    
+      #discard-cards .discard-ring-card {
+        width: 42px;
+        height: 63px;
+        font-size: 12px;
+      }
+    
+      #discard-pile h3 {
+        top: calc(50% + 155px);
+      }
+    
+      #discard-pile #discard-count {
+        top: calc(50% + 173px);
+      }
     }
 
     
@@ -619,7 +762,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.9</p>
+        <p class="game-version">V.3.0.1</p>
       </form>
     </div>
   </section>
@@ -742,7 +885,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.9</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.1</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
