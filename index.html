@@ -619,7 +619,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.7</p>
+        <p class="game-version">V.3.0.8</p>
       </form>
     </div>
   </section>
@@ -742,7 +742,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.7</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.8</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1802,25 +1802,71 @@ function renderDiscardPile() {
     halfOverlapSpacing /
     (2 * Math.sin(Math.PI / DISCARD_CAPACITY));
 
-  const radiusX = Math.min(
-    radius,
-    (stageWidth - cardWidth - 16) / 2
-  );
-
-  const radiusY = radius;
-
-  // Kartu pertama dimulai dari kanan-atas Draw Pile.
-  const startAngle = -90;
-
-  game.discardPile
-    .slice(0, DISCARD_CAPACITY)
-    .forEach((card, index) => {
-
-      // Posisi ditentukan oleh nomor urut kartu.
-      // Penambahan kartu baru tidak mengubah posisi kartu lama.
-      const angle = startAngle + (index * angleStep);
+    // Bentuk oval horizontal.
+    const radiusX = Math.min(
+      (stageWidth - cardWidth - 16) / 2,
+      radius * 1.8
+    );
+    
+    const radiusY = radius;
+    
+    // Kartu pertama dimulai dari kanan-atas Draw Pile.
+    const startAngle = -90;
+    
+    // Menghitung lintasan oval agar jarak antarkartu lebih merata.
+    const arcSteps = 1000;
+    const arcPoints = [];
+    
+    let totalArcLength = 0;
+    let previousX = null;
+    let previousY = null;
+    
+    for (let step = 0; step <= arcSteps; step++) {
+    
+      const angle =
+        startAngle + (DISCARD_ARC * step / arcSteps);
+    
       const radians = angle * Math.PI / 180;
-
+    
+      const x = Math.cos(radians) * radiusX;
+      const y = Math.sin(radians) * radiusY;
+    
+      if (previousX !== null) {
+        totalArcLength += Math.hypot(
+          x - previousX,
+          y - previousY
+        );
+      }
+    
+      arcPoints.push({
+        angle,
+        distance: totalArcLength
+      });
+    
+      previousX = x;
+      previousY = y;
+    }
+    
+    game.discardPile
+      .slice(0, DISCARD_CAPACITY)
+      .forEach((card, index) => {
+    
+      // Setiap kartu memiliki posisi tetap pada lintasan oval.
+      const targetDistance =
+        totalArcLength * index / (DISCARD_CAPACITY - 1);
+  
+      let point = arcPoints[0];
+  
+      for (const candidate of arcPoints) {
+        if (candidate.distance >= targetDistance) {
+          point = candidate;
+          break;
+        }
+      }
+  
+      const angle = point.angle;
+      const radians = angle * Math.PI / 180;
+  
       const x = Math.cos(radians) * radiusX;
       const y = Math.sin(radians) * radiusY;
 
