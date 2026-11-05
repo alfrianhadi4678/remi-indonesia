@@ -619,7 +619,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.8</p>
+        <p class="game-version">V.3.0.9</p>
       </form>
     </div>
   </section>
@@ -742,7 +742,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.8</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.9</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1791,7 +1791,7 @@ function renderDiscardPile() {
   const cardHeight = compact ? 63 : 72;
   const cardWidth = compact ? 42 : 50;
 
-  const DISCARD_ARC = 342; // 95% dari 360 derajat
+  const DISCARD_ARC = 270; // 95% dari 360 derajat
 
   const angleStep = DISCARD_ARC / (DISCARD_CAPACITY - 1);
 
@@ -1802,16 +1802,17 @@ function renderDiscardPile() {
     halfOverlapSpacing /
     (2 * Math.sin(Math.PI / DISCARD_CAPACITY));
 
-    // Bentuk oval horizontal.
+    // Oval dibuat lebih lebar dan lebih pipih.
     const radiusX = Math.min(
       (stageWidth - cardWidth - 16) / 2,
-      radius * 1.8
+      radius * 2
     );
     
-    const radiusY = radius;
+    // Tinggi oval hanya 55% dari radius awal.
+    const radiusY = radius * 0.55;
     
-    // Kartu pertama dimulai dari kanan-atas Draw Pile.
-    const startAngle = -90;
+    // Posisi awal disesuaikan agar celah lintasan berada di bagian atas.
+    const startAngle = -90 + (360 - DISCARD_ARC) / 2;
     
     // Menghitung lintasan oval agar jarak antarkartu lebih merata.
     const arcSteps = 1000;
