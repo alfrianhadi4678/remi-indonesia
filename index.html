@@ -162,11 +162,15 @@
     }
 
     /* Kartu penutup pada Tutup Tangan */
+    .meld {
+      position: relative;
+    }
+    
     .closing-card-overlay {
       position: absolute;
       top: -30px;
       right: -12px;
-      z-index: 5;
+      z-index: 10;
       transform: rotate(8deg) scale(0.85);
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
       pointer-events: none;
@@ -494,6 +498,77 @@
       font-size: 13px;
     }
 
+    /* Pemain 2: kartu tangan di kiri, kombinasi di kanan */
+    .opponents > .player:nth-child(1) {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      grid-template-areas:
+        "title title"
+        "hand label"
+        "hand melds";
+      align-items: start;
+      column-gap: 8px;
+    }
+    
+    .opponents > .player:nth-child(1) h3 {
+      grid-area: title;
+    }
+    
+    .opponents > .player:nth-child(1) > .cards {
+      grid-area: hand;
+    }
+    
+    .opponents > .player:nth-child(1) > p {
+      grid-area: label;
+      margin: 0 0 6px;
+    }
+    
+    .opponents > .player:nth-child(1) .meld-area {
+      grid-area: melds;
+      min-width: 0;
+      flex-direction: column;
+      overflow-x: auto;
+    }
+    
+    /* Pemain 4: kombinasi di kiri, kartu tangan di kanan */
+    .opponents > .player:nth-child(3) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 48px;
+      grid-template-areas:
+        "title title"
+        "label hand"
+        "melds hand";
+      align-items: start;
+      column-gap: 8px;
+    }
+    
+    .opponents > .player:nth-child(3) h3 {
+      grid-area: title;
+    }
+    
+    .opponents > .player:nth-child(3) > .cards {
+      grid-area: hand;
+    }
+    
+    .opponents > .player:nth-child(3) > p {
+      grid-area: label;
+      margin: 0 0 6px;
+    }
+    
+    .opponents > .player:nth-child(3) .meld-area {
+      grid-area: melds;
+      min-width: 0;
+      flex-direction: column;
+      overflow-x: auto;
+    }
+    
+    /* Kartu tangan tetap tersusun vertikal */
+    .opponents > .player:nth-child(1) > .cards,
+    .opponents > .player:nth-child(3) > .cards {
+      flex-direction: column;
+      align-items: center;
+    }
+    
     @media (max-width: 850px) {
       .layout {
         grid-template-columns: 1fr;
@@ -537,6 +612,24 @@
       .middle {
         min-height: 290px;
       }
+
+      .opponents > .player:nth-child(1),
+      .opponents > .player:nth-child(3) {
+        display: block;
+      }
+      
+      .opponents > .player:nth-child(1) > .cards,
+      .opponents > .player:nth-child(3) > .cards {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      
+      .opponents > .player:nth-child(1) .meld-area,
+      .opponents > .player:nth-child(3) .meld-area {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      
     }
 
     @media (max-width: 480px) {
@@ -762,7 +855,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.1</p>
+        <p class="game-version">V.3.0.2</p>
       </form>
     </div>
   </section>
@@ -885,7 +978,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.1</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.2</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1949,10 +2042,10 @@ function renderDiscardPile() {
     const radiusX = Math.min(
       (stageWidth - cardWidth - 16) / 2,
       radius * 2
-    );
+    ) * 0.9;
     
     // Tinggi oval hanya 55% dari radius awal.
-    const radiusY = radius * 0.55;
+    const radiusY = radius * 0.55 * 0.9;
     
     // Posisi awal disesuaikan agar celah lintasan berada di bagian atas.
     const startAngle = -90 + (360 - DISCARD_ARC) / 2;
