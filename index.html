@@ -117,22 +117,27 @@
     /* Posisi pemain mengelilingi bagian tengah meja */
 
     
-    /* PEMAIN 2: kartu di kiri, kombinasi di kanan */
+    
+    /* ==================================
+       PEMAIN 2 - ARAH JAM 9
+       Kartu di kiri, kombinasi di kanan
+    ================================== */
+    
     .opponents > .player:nth-child(1) {
       display: grid;
       grid-template-columns: 48px minmax(0, 1fr);
       grid-template-areas:
-        "title title"
-        "hand label"
+        "title label"
         "hand melds";
       align-items: start;
-      column-gap: 8px;
+      column-gap: 10px;
       min-width: 0;
     }
     
     .opponents > .player:nth-child(1) h3 {
       grid-area: title;
       text-align: left;
+      margin: 0 0 8px;
     }
     
     .opponents > .player:nth-child(1) > .cards {
@@ -146,33 +151,40 @@
     
     .opponents > .player:nth-child(1) > p {
       grid-area: label;
-      margin: 0 0 6px;
+      text-align: center;
+      margin: 0 0 8px;
     }
     
     .opponents > .player:nth-child(1) .meld-area {
       grid-area: melds;
       min-width: 0;
+      display: flex;
       flex-direction: column;
+      align-items: center;
       overflow-x: auto;
     }
     
     
-    /* PEMAIN 4: kombinasi di kiri, kartu di kanan */
+    /* ==================================
+       PEMAIN 4 - ARAH JAM 3
+       Kombinasi di kiri, kartu di kanan
+    ================================== */
+    
     .opponents > .player:nth-child(3) {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 48px;
       grid-template-areas:
-        "title title"
-        "label hand"
+        "label title"
         "melds hand";
       align-items: start;
-      column-gap: 8px;
+      column-gap: 10px;
       min-width: 0;
     }
     
     .opponents > .player:nth-child(3) h3 {
       grid-area: title;
       text-align: right;
+      margin: 0 0 8px;
     }
     
     .opponents > .player:nth-child(3) > .cards {
@@ -186,16 +198,19 @@
     
     .opponents > .player:nth-child(3) > p {
       grid-area: label;
-      margin: 0 0 6px;
-      text-align: right;
+      text-align: center;
+      margin: 0 0 8px;
     }
     
     .opponents > .player:nth-child(3) .meld-area {
       grid-area: melds;
       min-width: 0;
+      display: flex;
       flex-direction: column;
+      align-items: center;
       overflow-x: auto;
     }
+
     
     /* Draw Pile dan Discard Pile tetap di tengah */
     .table > .middle {
@@ -973,25 +988,29 @@
 
   <main class="layout">
     <section class="table">
+      
       <div class="opponents">
+        <!-- PEMAIN 2 -->
         <section class="player">
-          <h3>Pemain 2 <span class="score" data-player-score="1">0 poin</span></h3>
+          <h3>Pemain 2</h3>
           <div class="cards" id="player-1-hand"></div>
-          <p>Kombinasi terbuka</p>
+          <p>Kombinasi Terbuka</p>
           <div class="meld-area" id="player-1-melds"></div>
         </section>
-
+      
+        <!-- PEMAIN 3 -->
         <section class="player">
-          <h3>Pemain 3 <span class="score" data-player-score="2">0 poin</span></h3>
+          <h3>Pemain 3</h3>
           <div class="cards" id="player-2-hand"></div>
-          <p>Kombinasi terbuka</p>
+          <p>Kombinasi Terbuka</p>
           <div class="meld-area" id="player-2-melds"></div>
         </section>
-
+      
+        <!-- PEMAIN 4 -->
         <section class="player">
-          <h3>Pemain 4 <span class="score" data-player-score="3">0 poin</span></h3>
+          <h3>Pemain 4</h3>
           <div class="cards" id="player-3-hand"></div>
-          <p>Kombinasi terbuka</p>
+          <p>Kombinasi Terbuka</p>
           <div class="meld-area" id="player-3-melds"></div>
         </section>
       </div>
