@@ -116,29 +116,85 @@
 
     /* Posisi pemain mengelilingi bagian tengah meja */
 
-    /* Pemain 2: sisi kiri */
+    
+    /* PEMAIN 2: kartu di kiri, kombinasi di kanan */
     .opponents > .player:nth-child(1) {
-      grid-column: 1;
-      grid-row: 2;
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      grid-template-areas:
+        "title title"
+        "hand label"
+        "hand melds";
+      align-items: start;
+      column-gap: 8px;
+      min-width: 0;
     }
     
-    /* Pemain 3: sisi atas */
-    .opponents > .player:nth-child(2) {
-      grid-column: 2;
-      grid-row: 1;
+    .opponents > .player:nth-child(1) h3 {
+      grid-area: title;
+      text-align: left;
     }
     
-    /* Pemain 4: sisi kanan */
-    .opponents > .player:nth-child(3) {
-      grid-column: 3;
-      grid-row: 2;
-    }
-    
-    /* Kartu tangan pemain 2 dan 4 disusun vertikal */
-    .opponents > .player:nth-child(1) > .cards,
-    .opponents > .player:nth-child(3) > .cards {
+    .opponents > .player:nth-child(1) > .cards {
+      grid-area: hand;
+      display: flex;
       flex-direction: column;
+      flex-wrap: nowrap;
       align-items: flex-start;
+      gap: 3px;
+    }
+    
+    .opponents > .player:nth-child(1) > p {
+      grid-area: label;
+      margin: 0 0 6px;
+    }
+    
+    .opponents > .player:nth-child(1) .meld-area {
+      grid-area: melds;
+      min-width: 0;
+      flex-direction: column;
+      overflow-x: auto;
+    }
+    
+    
+    /* PEMAIN 4: kombinasi di kiri, kartu di kanan */
+    .opponents > .player:nth-child(3) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 48px;
+      grid-template-areas:
+        "title title"
+        "label hand"
+        "melds hand";
+      align-items: start;
+      column-gap: 8px;
+      min-width: 0;
+    }
+    
+    .opponents > .player:nth-child(3) h3 {
+      grid-area: title;
+      text-align: right;
+    }
+    
+    .opponents > .player:nth-child(3) > .cards {
+      grid-area: hand;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      align-items: flex-end;
+      gap: 3px;
+    }
+    
+    .opponents > .player:nth-child(3) > p {
+      grid-area: label;
+      margin: 0 0 6px;
+      text-align: right;
+    }
+    
+    .opponents > .player:nth-child(3) .meld-area {
+      grid-area: melds;
+      min-width: 0;
+      flex-direction: column;
+      overflow-x: auto;
     }
     
     /* Draw Pile dan Discard Pile tetap di tengah */
