@@ -922,13 +922,14 @@
     /* ===== PERBAIKAN TATA LETAK MEJA (layar lebar) ===== */
     @media (min-width: 851px) {
       .table {
-        --sisi: 320px;  /* ubah angka ini untuk Pemain 2 dan 4 */
+        --sisi: 320px;           /* lebar kotak Pemain 2 dan 4 */
+        --tinggi-sisi: 520px;    /* tinggi TETAP kotak Pemain 2 dan 4 */
     
         grid-template-columns:
           var(--sisi)
           minmax(300px, 1fr)
           var(--sisi);
-        grid-template-rows: auto minmax(310px, auto) auto;
+        grid-template-rows: auto var(--tinggi-sisi) auto;
         align-items: start;
       }
     
@@ -963,14 +964,33 @@
         min-height: 170px;
       }
     
+      /* ===== PEMAIN 2 dan 4: tinggi tetap ===== */
+      .table > .opponents > .player:nth-child(1),
+      .table > .opponents > .player:nth-child(3) {
+        align-self: stretch;     /* ikut tinggi baris yang sudah tetap */
+        overflow: hidden;
+      }
+    
+      /* Kartu di tangan tidak boleh mengecil atau memanjangkan kotak */
+      .table > .opponents > .player:nth-child(1) > .cards,
+      .table > .opponents > .player:nth-child(3) > .cards {
+        min-height: 0;
+        align-self: stretch;
+        overflow: visible;
+      }
+    
+      .table > .opponents > .player:nth-child(1) > .cards > *,
+      .table > .opponents > .player:nth-child(3) > .cards > * {
+        flex: 0 0 auto;
+      }
+    
       /* ===== PEMAIN 2: kartu tangan 1 bagian (kiri), kombinasi 3 bagian ===== */
       .table > .opponents > .player:nth-child(1) {
         display: grid;
         grid-template-columns: 1fr 3fr;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
         grid-template-areas:
-          "title title"
-          "hand  label"
+          "title label"
           "hand  melds";
         column-gap: 10px;
         align-items: start;
@@ -979,6 +999,10 @@
       .table > .opponents > .player:nth-child(1) > h3 {
         grid-area: title;
         text-align: left;
+        white-space: nowrap;
+        margin: 0 0 10px;
+        font-size: 15px;
+        line-height: 1.2;
       }
     
       .table > .opponents > .player:nth-child(1) > .cards {
@@ -990,23 +1014,26 @@
       .table > .opponents > .player:nth-child(1) > p {
         grid-area: label;
         text-align: center;
-        margin: 0 0 6px;
+        margin: 0 0 10px;
+        font-size: 15px;
+        line-height: 1.2;
       }
     
       .table > .opponents > .player:nth-child(1) > .meld-area {
         grid-area: melds;
         align-items: center;
+        align-self: stretch;
         min-width: 0;
+        min-height: 0;
       }
     
       /* ===== PEMAIN 4: kombinasi 3 bagian, kartu tangan 1 bagian (kanan) ===== */
       .table > .opponents > .player:nth-child(3) {
         display: grid;
         grid-template-columns: 3fr 1fr;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
         grid-template-areas:
-          "title title"
-          "label hand"
+          "label title"
           "melds hand";
         column-gap: 10px;
         align-items: start;
@@ -1015,6 +1042,10 @@
       .table > .opponents > .player:nth-child(3) > h3 {
         grid-area: title;
         text-align: right;
+        white-space: nowrap;
+        margin: 0 0 10px;
+        font-size: 15px;
+        line-height: 1.2;
       }
     
       .table > .opponents > .player:nth-child(3) > .cards {
@@ -1026,13 +1057,17 @@
       .table > .opponents > .player:nth-child(3) > p {
         grid-area: label;
         text-align: center;
-        margin: 0 0 6px;
+        margin: 0 0 10px;
+        font-size: 15px;
+        line-height: 1.2;
       }
     
       .table > .opponents > .player:nth-child(3) > .meld-area {
         grid-area: melds;
         align-items: center;
+        align-self: stretch;
         min-width: 0;
+        min-height: 0;
       }
     }
     
@@ -2903,5 +2938,56 @@ function setGameMode(mode) {
 })();
 </script>
 
+<script>
+/* Kartu Pemain 2 dan 4 saling menumpuk jika kotak tidak cukup. */
+function fitSideHands() {
+  const wide = window.matchMedia("(min-width: 851px)").matches;
+
+  [1, 3].forEach(playerIndex => {
+    const box = document.getElementById(`player-${playerIndex}-hand`);
+    if (!box) return;
+
+    const items = Array.from(box.children);
+    items.forEach(el => { el.style.marginTop = ""; });
+
+    // Tampilan HP memakai susunan horizontal, jadi tidak perlu ditumpuk.
+    if (!wide || items.length < 2) return;
+
+    const avail = box.clientHeight;
+    if (avail <= 0) return; // layar permainan masih tersembunyi
+
+    const style = getComputedStyle(items[0]);
+    const marginTop = parseFloat(style.marginTop) || 0;
+    const marginBottom = parseFloat(style.marginBottom) || 0;
+    const outerHeight = items[0].offsetHeight + marginTop + marginBottom;
+    const gap = parseFloat(getComputedStyle(box).rowGap) || 0;
+
+    const naturalStep = outerHeight + gap;
+    const needed = naturalStep * (items.length - 1) + outerHeight;
+
+    // Masih cukup: biarkan jarak normal.
+    if (needed <= avail) return;
+
+    // Tidak cukup: rapatkan jarak agar semua kartu muat.
+    const step = (avail - outerHeight) / (items.length - 1);
+    const shift = step - naturalStep + marginTop;
+
+    items.forEach((el, i) => {
+      if (i > 0) el.style.marginTop = shift + "px";
+    });
+  });
+}
+
+// Jalankan otomatis setiap kali kartu lawan digambar ulang.
+const renderOpponentHandsAsli = renderOpponentHands;
+renderOpponentHands = function () {
+  renderOpponentHandsAsli();
+  fitSideHands();
+};
+
+window.addEventListener("resize", fitSideHands);
+fitSideHands();
+</script>
+  
 </body>
 </html>
