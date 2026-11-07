@@ -919,20 +919,21 @@
       .login-card h1 { font-size: 25px; }
     }
 
-        /* ===== PERBAIKAN TATA LETAK MEJA (layar lebar) ===== */
+    /* ===== PERBAIKAN TATA LETAK MEJA (layar lebar) ===== */
     @media (min-width: 851px) {
       .table {
+        /* Kolom samping ±setengah dari sebelumnya */
         grid-template-columns:
-          minmax(170px, 1fr)
-          minmax(300px, 2.2fr)
-          minmax(170px, 1fr);
+          minmax(120px, 1fr)
+          minmax(300px, 6.4fr)
+          minmax(120px, 1fr);
         grid-template-rows: auto minmax(310px, auto) auto;
         align-items: start;
       }
     
-      /* Pemain 3: baris atas, selebar Pemain 1 */
+      /* Pemain 3: baris atas, hanya selebar kolom tengah */
       .table > .opponents > .player:nth-child(2) {
-        grid-column: 1 / -1;
+        grid-column: 2;
         grid-row: 1;
       }
     
@@ -955,9 +956,9 @@
         align-self: center;
       }
     
-      /* Pemain 1 (Anda): baris bawah, selebar Pemain 3 */
+      /* Pemain 1 (Anda): baris bawah, hanya selebar kolom tengah */
       .table > .player {
-        grid-column: 1 / -1;
+        grid-column: 2;
         grid-row: 3;
       }
     
