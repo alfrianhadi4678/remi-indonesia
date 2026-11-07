@@ -962,6 +962,17 @@
       .table > .player {
         min-height: 170px;
       }
+
+      /* Pemain 2: kartu di sisi kiri, sejajar judul */
+      .table > .opponents > .player:nth-child(1) > .cards {
+        align-items: flex-start;
+      }
+    
+      /* Pemain 4: kartu di sisi kanan, sejajar judul */
+      .table > .opponents > .player:nth-child(3) > .cards {
+        align-items: flex-end;
+      }
+      
     }
     
   </style>
