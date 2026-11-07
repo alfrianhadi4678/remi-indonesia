@@ -1070,6 +1070,15 @@
         min-height: 0;
       }
     }
+
+    /* Kartu dalam satu kombinasi selalu satu baris (tidak turun ke bawah) */
+    .meld .cards {
+      flex-wrap: nowrap;
+    }
+    
+    .meld .cards > .card {
+      flex: 0 0 auto;
+    }
     
   </style>
 </head>
@@ -1094,7 +1103,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.4</p>
+        <p class="game-version">V.3.0.5</p>
       </form>
     </div>
   </section>
@@ -1220,7 +1229,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.4</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.5</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -2987,6 +2996,50 @@ renderOpponentHands = function () {
 
 window.addEventListener("resize", fitSideHands);
 fitSideHands();
+</script>
+
+<script>
+/* Kartu dalam kombinasi saling menumpuk jika area tidak cukup. */
+function fitMeldCards() {
+  document.querySelectorAll(".meld-area").forEach(area => {
+    const avail = area.clientWidth - 4;   // sisakan ruang untuk garis pilihan
+
+    area.querySelectorAll(".meld > .cards").forEach(box => {
+      const items = Array.from(box.children);
+
+      // Kembalikan ke jarak normal dulu sebelum mengukur.
+      items.forEach(el => { el.style.marginLeft = ""; });
+
+      if (items.length < 2 || avail <= 0) return; // area masih tersembunyi
+
+      const w = items[0].offsetWidth;
+      const gap = parseFloat(getComputedStyle(box).columnGap) || 0;
+      const naturalStep = w + gap;
+      const needed = naturalStep * (items.length - 1) + w;
+
+      // Masih cukup: biarkan jarak normal.
+      if (needed <= avail) return;
+
+      // Tidak cukup: rapatkan agar semua kartu muat dalam satu baris.
+      const step = (avail - w) / (items.length - 1);
+      const shift = step - naturalStep;   // bernilai negatif
+
+      items.forEach((el, i) => {
+        if (i > 0) el.style.marginLeft = shift + "px";
+      });
+    });
+  });
+}
+
+// Jalankan otomatis setiap kali kombinasi digambar ulang.
+const renderOpenMeldsAsli = renderOpenMelds;
+renderOpenMelds = function () {
+  renderOpenMeldsAsli();
+  fitMeldCards();
+};
+
+window.addEventListener("resize", fitMeldCards);
+fitMeldCards();
 </script>
   
 </body>
