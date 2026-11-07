@@ -919,6 +919,55 @@
       .login-card h1 { font-size: 25px; }
     }
 
+        /* ===== PERBAIKAN TATA LETAK MEJA (layar lebar) ===== */
+    @media (min-width: 851px) {
+      .table {
+        grid-template-columns:
+          minmax(170px, 1fr)
+          minmax(300px, 2.2fr)
+          minmax(170px, 1fr);
+        grid-template-rows: auto minmax(310px, auto) auto;
+        align-items: start;
+      }
+    
+      /* Pemain 3: baris atas, selebar Pemain 1 */
+      .table > .opponents > .player:nth-child(2) {
+        grid-column: 1 / -1;
+        grid-row: 1;
+      }
+    
+      /* Pemain 2: kiri Draw Pile */
+      .table > .opponents > .player:nth-child(1) {
+        grid-column: 1;
+        grid-row: 2;
+      }
+    
+      /* Pemain 4: kanan Draw Pile */
+      .table > .opponents > .player:nth-child(3) {
+        grid-column: 3;
+        grid-row: 2;
+      }
+    
+      /* Draw Pile dan Discard Pile di tengah */
+      .table > .middle {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: center;
+      }
+    
+      /* Pemain 1 (Anda): baris bawah, selebar Pemain 3 */
+      .table > .player {
+        grid-column: 1 / -1;
+        grid-row: 3;
+      }
+    
+      /* Tinggi minimal Pemain 3 dan Pemain 1 disamakan */
+      .table > .opponents > .player:nth-child(2),
+      .table > .player {
+        min-height: 170px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -942,7 +991,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.5</p>
+        <p class="game-version">V.3.0.4</p>
       </form>
     </div>
   </section>
@@ -1068,7 +1117,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.5</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.4</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
