@@ -962,17 +962,78 @@
       .table > .player {
         min-height: 170px;
       }
-
-      /* Pemain 2: kartu di sisi kiri, sejajar judul */
-      .table > .opponents > .player:nth-child(1) > .cards {
-        align-items: flex-start;
+    
+      /* ===== PEMAIN 2: kartu tangan 1 bagian (kiri), kombinasi 3 bagian ===== */
+      .table > .opponents > .player:nth-child(1) {
+        display: grid;
+        grid-template-columns: 1fr 3fr;
+        grid-template-rows: auto auto 1fr;
+        grid-template-areas:
+          "title title"
+          "hand  label"
+          "hand  melds";
+        column-gap: 10px;
+        align-items: start;
       }
     
-      /* Pemain 4: kartu di sisi kanan, sejajar judul */
-      .table > .opponents > .player:nth-child(3) > .cards {
-        align-items: flex-end;
+      .table > .opponents > .player:nth-child(1) > h3 {
+        grid-area: title;
+        text-align: left;
       }
-      
+    
+      .table > .opponents > .player:nth-child(1) > .cards {
+        grid-area: hand;
+        align-items: flex-start;
+        width: auto;
+      }
+    
+      .table > .opponents > .player:nth-child(1) > p {
+        grid-area: label;
+        text-align: center;
+        margin: 0 0 6px;
+      }
+    
+      .table > .opponents > .player:nth-child(1) > .meld-area {
+        grid-area: melds;
+        align-items: center;
+        min-width: 0;
+      }
+    
+      /* ===== PEMAIN 4: kombinasi 3 bagian, kartu tangan 1 bagian (kanan) ===== */
+      .table > .opponents > .player:nth-child(3) {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        grid-template-rows: auto auto 1fr;
+        grid-template-areas:
+          "title title"
+          "label hand"
+          "melds hand";
+        column-gap: 10px;
+        align-items: start;
+      }
+    
+      .table > .opponents > .player:nth-child(3) > h3 {
+        grid-area: title;
+        text-align: right;
+      }
+    
+      .table > .opponents > .player:nth-child(3) > .cards {
+        grid-area: hand;
+        align-items: flex-end;
+        width: auto;
+      }
+    
+      .table > .opponents > .player:nth-child(3) > p {
+        grid-area: label;
+        text-align: center;
+        margin: 0 0 6px;
+      }
+    
+      .table > .opponents > .player:nth-child(3) > .meld-area {
+        grid-area: melds;
+        align-items: center;
+        min-width: 0;
+      }
     }
     
   </style>
