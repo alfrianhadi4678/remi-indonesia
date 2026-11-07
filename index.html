@@ -922,53 +922,48 @@
     /* ===== PERBAIKAN TATA LETAK MEJA (layar lebar) ===== */
     @media (min-width: 851px) {
       .table {
-        /* Kolom samping ±setengah dari sebelumnya */
+        --sisi: 220px;  /* ubah angka ini untuk Pemain 2 dan 4 */
+    
         grid-template-columns:
-          minmax(120px, 1fr)
-          minmax(300px, 6.4fr)
-          minmax(120px, 1fr);
+          var(--sisi)
+          minmax(300px, 1fr)
+          var(--sisi);
         grid-template-rows: auto minmax(310px, auto) auto;
         align-items: start;
       }
     
-      /* Pemain 3: baris atas, hanya selebar kolom tengah */
       .table > .opponents > .player:nth-child(2) {
         grid-column: 2;
         grid-row: 1;
       }
     
-      /* Pemain 2: kiri Draw Pile */
       .table > .opponents > .player:nth-child(1) {
         grid-column: 1;
         grid-row: 2;
       }
     
-      /* Pemain 4: kanan Draw Pile */
       .table > .opponents > .player:nth-child(3) {
         grid-column: 3;
         grid-row: 2;
       }
     
-      /* Draw Pile dan Discard Pile di tengah */
       .table > .middle {
         grid-column: 2;
         grid-row: 2;
         align-self: center;
       }
     
-      /* Pemain 1 (Anda): baris bawah, hanya selebar kolom tengah */
       .table > .player {
         grid-column: 2;
         grid-row: 3;
       }
     
-      /* Tinggi minimal Pemain 3 dan Pemain 1 disamakan */
       .table > .opponents > .player:nth-child(2),
       .table > .player {
         min-height: 170px;
       }
     }
-
+    
   </style>
 </head>
 <body>
