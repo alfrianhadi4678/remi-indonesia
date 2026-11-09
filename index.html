@@ -891,27 +891,6 @@
     .table > .player > p           { grid-area: label; }
     .table > .player > .meld-area  { grid-area: melds; }
     
-    .action-buttons {
-      grid-area: buttons;
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 6px;
-      width: 440px;
-      align-self: start;
-    }
-    
-    .action-buttons button {
-      grid-column: span 2;
-      margin: 0;
-      padding: 8px 6px;
-      font-size: 12px;
-      line-height: 1.2;
-    }
-    
-    .action-buttons button:nth-child(n+4) {
-      grid-column: span 3;
-    }
-    
     /* Layar lebar: panel di sudut kosong meja */
     @media (min-width: 851px) {
       .table > .score-corner {
@@ -946,16 +925,48 @@
       }
     }
 
+    /* ===== TOMBOL AKSI ===== */
+    .action-buttons {
+      /* Ubah angka-angka ini untuk mengatur ukuran */
+      --sisi: 84px;           /* ukuran tombol persegi */
+      --tinggi-bawah: 36px;   /* tinggi Buka dan Tambah Kombinasi */
+      --gap: 6px;             /* jarak antar-tombol */
+      --ikon: 36px;           /* ukuran ikon */
+    
+      grid-area: buttons;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: var(--gap);
+      width: calc(var(--sisi) * 3 + var(--gap) * 2);
+      align-self: start;
+    }
+    
+    /* Dua tombol bawah: lebar, masing-masing setengah baris */
     .action-buttons button {
+      grid-column: span 3;
+      height: var(--tinggi-bawah);
+      margin: 0;
+      padding: 0 6px;
+      font-size: 12px;
+      line-height: 1.2;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
     }
     
+    /* Tiga tombol atas: persegi, ikon di atas teks */
+    .action-buttons button:nth-child(-n+3) {
+      grid-column: span 2;
+      height: var(--sisi);
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+    }
+    
     .btn-icon {
-      width: 18px;
-      height: 18px;
+      width: var(--ikon);
+      height: var(--ikon);
       flex: 0 0 auto;
     }
     
