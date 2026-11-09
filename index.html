@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.9</p>
+        <p class="game-version">V.3.0.5</p>
       </form>
     </div>
   </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.9</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.5</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1315,13 +1315,36 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
     return roundScores;
   }
 
+  // Hitung poin dari kombinasi terbuka di meja untuk setiap pemain
   for (let i = 0; i < playerCount; i++) {
     let score = 0;
+    
+    // 1. Hitung poin dari kombinasi yang sudah dibuka
+    if (game.openMelds && game.openMelds[i]) {
+      game.openMelds[i].forEach(meld => {
+        if (meld.cards) {
+          meld.cards.forEach(card => {
+            if (card.joker) {
+              // Joker mengikuti nilai kombinasi (misal: dihitung setara nilai kartu lain, atau 10 poin aman)
+              score += 10;
+            } else if (card.value >= 2 && card.value <= 10) {
+              score += 5;
+            } else if ([11, 12, 13].includes(card.value)) {
+              score += 10;
+            } else if (card.value === 14) {
+              score += 15;
+            }
+          });
+        }
+      });
+    }
+
+    // 2. Pengurangan poin dari kartu sisa di tangan (Hanya untuk Tutup Biasa)
     if (winType === "tutup-biasa") {
       const hand = game.players[i];
       hand.forEach(card => {
         if (card.joker) {
-          score -= 100;
+          score -= 100; // Penalti Joker tidak berkombinasi
         } else if (card.value >= 2 && card.value <= 10) {
           score -= 5;
         } else if ([11, 12, 13].includes(card.value)) {
@@ -1331,31 +1354,11 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
         }
       });
     }
+
     roundScores[i] += score;
   }
 
-  if (winType === "tutup-biasa" && closingCard) {
-    if (closingCard.joker) {
-      roundScores[winnerIndex] += 300;
-    } else if (closingCard.value >= 2 && closingCard.value <= 10) {
-      roundScores[winnerIndex] += 50;
-    } else if ([11, 12, 13].includes(closingCard.value)) {
-      roundScores[winnerIndex] += 100;
-    } else if (closingCard.value === 14) {
-      roundScores[winnerIndex] += 150;
-    }
-
-    if (discarderIndex !== null && discarderIndex !== winnerIndex) {
-      if (closingCard.value >= 2 && closingCard.value <= 10) {
-        roundScores[discarderIndex] -= 50;
-      } else if ([11, 12, 13].includes(closingCard.value)) {
-        roundScores[discarderIndex] -= 100;
-      } else if (closingCard.value === 14) {
-        roundScores[discarderIndex] -= 150;
-      }
-    }
-  }
-
+  // Tambahkan ke skor total keseluruhan pemain
   for (let i = 0; i < playerCount; i++) {
     game.scores[i] += roundScores[i];
   }
@@ -1378,9 +1381,12 @@ function checkGameWinner() {
 }
 
 function startNextRound() {
-  const currentScores = window.remiGame.scores; // Amankan skor total akumulasi
+  const currentScores = window.remiGame.scores; 
+  const nextRoundNum = (window.remiGame.roundNumber || 1) + 1; // Tambah ronde
+
   window.remiGame = dealCards(4);
-  window.remiGame.scores = currentScores; // Kembalikan skor total
+  window.remiGame.scores = currentScores; 
+  window.remiGame.roundNumber = nextRoundNum; // Simpan nomor ronde baru
   
   window.remiGame.selectedCardIndices = [];
   window.remiGame.selectedMeldIndex = null;
@@ -1424,9 +1430,10 @@ function updateTurnIndicator() {
   }
 
   // Jika permainan masih berlangsung.
+  const currentRound = game.roundNumber || 1;
   indicator.textContent = game.currentPlayer === 0
-    ? `🟢 Giliran Anda · Giliran ${game.turnNumber}`
-    : `⏳ Giliran Pemain ${game.currentPlayer + 1} · Giliran ${game.turnNumber}`;
+    ? `📍 Ronde ${currentRound} · 🟢 Giliran Anda`
+    : `📍 Ronde ${currentRound} · ⏳ Giliran Pemain ${game.currentPlayer + 1}`;
 }
 
 function nextTurn() {
