@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.7</p>
+        <p class="game-version">V.3.0.8</p>
       </form>
     </div>
   </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.7</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.8</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -2438,12 +2438,12 @@ document.getElementById("draw-button").addEventListener("click", () => {
   const game = window.remiGame;
 
   if (game.winner !== null) {
-  return;
+    return;
   }
 
   if (game.hasDrawn || game.hasEatenThisTurn) {
-  alert("Kamu sudah mengambil kartu pada giliran ini, baik dari Draw Pile maupun Discard Pile.");
-  return;
+    alert("Kamu sudah mengambil kartu pada giliran ini, baik dari Draw Pile maupun Discard Pile.");
+    return;
   }
 
   if (game.drawPile.length === 0) {
@@ -2458,6 +2458,21 @@ document.getElementById("draw-button").addEventListener("click", () => {
   renderPlayerHand();
   renderOpponentHands();
   updatePileCounts();
+
+  // CEK APAKAH DRAW PILE SEKARANG HABIS
+  if (game.drawPile.length === 0) {
+    game.winner = -1; // -1 menandakan tidak ada pemenang tunggal (Draw Habis)
+    game.winType = "Draw Pile Habis";
+    updateTurnIndicator();
+
+    // Hitung poin akhir ronde berdasarkan aturan Draw Habis
+    const roundScores = calculateRoundScores("draw-habis", null);
+    
+    alert(
+      "DRAW PILE HABIS! Ronde berakhir.\n" +
+      "Perhitungan poin kombinasi telah ditambahkan ke skor sementara."
+    );
+  }
 });
 
 document.getElementById("discard-button").addEventListener("click", () => {
