@@ -27,7 +27,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 230px;
+      grid-template-columns: minmax(0, 1fr);
       gap: 14px;
       padding: 14px;
       align-items: start;
@@ -852,6 +852,99 @@
     .meld .cards > .card {
       flex: 0 0 auto;
     }
+
+    /* ===== SUDUT MEJA DAN TOMBOL AKSI ===== */
+    .corner-panel {
+      font-size: 13px;
+    }
+    
+    .corner-panel h3 {
+      margin: 6px 0 4px;
+      font-size: 13px;
+    }
+    
+    .corner-panel .player-score {
+      padding: 4px 0;
+    }
+    
+    .score-corner #turn-indicator {
+      margin: 0 0 6px;
+      font-weight: bold;
+    }
+    
+    /* Kotak Pemain 1: tombol di kanan atas */
+    .table > .player {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto auto auto 1fr;
+      grid-template-areas:
+        "title   buttons"
+        "hand    buttons"
+        "label   label"
+        "melds   melds";
+      column-gap: 12px;
+      align-content: start;
+    }
+    
+    .table > .player > h3          { grid-area: title; }
+    .table > .player > .cards      { grid-area: hand; }
+    .table > .player > p           { grid-area: label; }
+    .table > .player > .meld-area  { grid-area: melds; }
+    
+    .action-buttons {
+      grid-area: buttons;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 6px;
+      width: 440px;
+      align-self: start;
+    }
+    
+    .action-buttons button {
+      grid-column: span 2;
+      margin: 0;
+      padding: 8px 6px;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    
+    .action-buttons button:nth-child(n+4) {
+      grid-column: span 3;
+    }
+    
+    /* Layar lebar: panel di sudut kosong meja */
+    @media (min-width: 851px) {
+      .table > .score-corner {
+        grid-column: 3;
+        grid-row: 1;
+        align-self: start;
+      }
+    
+      .table > .penalty-corner {
+        grid-column: 3;
+        grid-row: 3;
+        align-self: start;
+      }
+    }
+    
+    /* Tablet dan HP: tombol turun ke bawah kartu tangan */
+    @media (max-width: 850px) {
+      .table > .player {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+        grid-template-areas:
+          "title"
+          "hand"
+          "buttons"
+          "label"
+          "melds";
+      }
+    
+      .action-buttons {
+        width: 100%;
+        margin-top: 8px;
+      }
+    }
     
   </style>
 </head>
@@ -922,6 +1015,16 @@
 
   <main class="layout">
     <section class="table">
+
+            <!-- Pojok kanan atas: giliran dan skor -->
+      <div class="panel corner-panel score-corner">
+        <p id="turn-indicator">🟢 Giliran Anda</p>
+        <h3>Skor sementara</h3>
+        <div class="player-score"><span>Anda</span><b data-player-score="0">0</b></div>
+        <div class="player-score"><span>Pemain 2</span><b data-player-score="1">0</b></div>
+        <div class="player-score"><span>Pemain 3</span><b data-player-score="2">0</b></div>
+        <div class="player-score"><span>Pemain 4</span><b data-player-score="3">0</b></div>
+      </div>
       
       <div class="opponents">
         <!-- PEMAIN 2 -->
@@ -966,41 +1069,30 @@
       <section class="player">
         <h3 id="hand-title">Kartu Anda</h3>
         <div class="cards" id="player-hand"></div>
-      
+
         <p>Kombinasi terbuka</p>
         <div class="meld-area" id="player-melds"></div>
+
+        <div class="action-buttons">
+          <button id="draw-button">AMBIL DARI DRAW PILE</button>
+          <button id="eat-discard-button">AMBIL DARI DISCARD PILE</button>
+          <button class="discard" id="discard-button">BUANG KARTU</button>
+          <button id="open-meld-button">BUKA KOMBINASI</button>
+          <button id="extend-meld-button" type="button">TAMBAH KE KOMBINASI</button>
+        </div>
       </section>
 
-    </section>
-
-    <aside class="sidebar">
-      <section class="panel">
-        <h3>Skor sementara</h3>
-        <div class="player-score"><span>Anda</span><b data-player-score="0">0</b></div>
-        <div class="player-score"><span>Pemain 2</span><b data-player-score="1">0</b></div>
-        <div class="player-score"><span>Pemain 3</span><b data-player-score="2">0</b></div>
-        <div class="player-score"><span>Pemain 4</span><b data-player-score="3">0</b></div>
-      </section>
-
-      <section class="panel">
-        <h3>Giliran saat ini</h3>
-        <p id="turn-indicator">🟢 Giliran Anda</p>
-        <button id="draw-button">AMBIL DARI DRAW PILE</button>
-        <button id="eat-discard-button">AMBIL DARI DISCARD PILE</button>
-        <button class="discard" id="discard-button">BUANG KARTU</button>
-        <button id="open-meld-button">BUKA KOMBINASI</button>
-        <button id="extend-meld-button" type="button">TAMBAH KE KOMBINASI</button>
-      </section>
-
-
-      <section class="panel">
+      <!-- Pojok kanan bawah: penalti -->
+      <div class="panel corner-panel penalty-corner">
         <h3>Penalti kelebihan makan</h3>
         <div class="player-score"><span>Anda</span><b>0</b></div>
         <div class="player-score"><span>Pemain 2</span><b>0</b></div>
         <div class="player-score"><span>Pemain 3</span><b>0</b></div>
         <div class="player-score"><span>Pemain 4</span><b>0</b></div>
-      </section>
-    </aside>
+      </div>
+
+    </section>
+
   </main>
 
   <section class="note">
