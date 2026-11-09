@@ -1258,6 +1258,16 @@ function dealCards(playerCount = 4) {
 /* Tes mesin kartu secara otomatis */
   
 window.remiGame = dealCards(4);
+
+// Mencegah ketidaksengajaan refresh atau menutup halaman saat game berjalan
+window.addEventListener("beforeunload", function (e) {
+  if (window.remiGame && window.remiGame.winner === null) {
+    e.preventDefault();
+    e.returnValue = "Permainan sedang berjalan. Apakah Anda yakin ingin keluar? Progres ronde ini akan hilang.";
+    return e.returnValue;
+  }
+});
+  
 window.remiGame.selectedCardIndices = [];
 window.remiGame.selectedMeldIndex = null;
 window.remiGame.draggedCardIndex = null;
@@ -1284,6 +1294,110 @@ window.remiGame.hasEatenThisTurn = false;
 window.remiGame.currentPlayer = 0;
 window.remiGame.turnNumber = 1;
 
+/* 
+  Fungsi Kalkulasi Poin Akhir Ronde 
+  winType: "tutup-biasa", "tutup-tangan", atau "draw-habis"
+  winnerIndex: indeks pemain yang menang (0 untuk Anda, 1-3 untuk lawan)
+  discarderIndex: indeks pemain yang membuang kartu terakhir (untuk aturan Kecebur)
+  closingCard: objek kartu penutup
+*/
+function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closingCard = null) {
+  const game = window.remiGame;
+  const playerCount = game.players.length;
+  let roundScores = Array.from({ length: playerCount }, () => 0);
+
+  if (winType === "tutup-tangan") {
+    roundScores[winnerIndex] += 250;
+    for (let i = 0; i < playerCount; i++) {
+      game.scores[i] += roundScores[i];
+    }
+    checkGameWinner();
+    return roundScores;
+  }
+
+  for (let i = 0; i < playerCount; i++) {
+    let score = 0;
+    if (winType === "tutup-biasa") {
+      const hand = game.players[i];
+      hand.forEach(card => {
+        if (card.joker) {
+          score -= 100;
+        } else if (card.value >= 2 && card.value <= 10) {
+          score -= 5;
+        } else if ([11, 12, 13].includes(card.value)) {
+          score -= 10;
+        } else if (card.value === 14) {
+          score -= 15;
+        }
+      });
+    }
+    roundScores[i] += score;
+  }
+
+  if (winType === "tutup-biasa" && closingCard) {
+    if (closingCard.joker) {
+      roundScores[winnerIndex] += 300;
+    } else if (closingCard.value >= 2 && closingCard.value <= 10) {
+      roundScores[winnerIndex] += 50;
+    } else if ([11, 12, 13].includes(closingCard.value)) {
+      roundScores[winnerIndex] += 100;
+    } else if (closingCard.value === 14) {
+      roundScores[winnerIndex] += 150;
+    }
+
+    if (discarderIndex !== null && discarderIndex !== winnerIndex) {
+      if (closingCard.value >= 2 && closingCard.value <= 10) {
+        roundScores[discarderIndex] -= 50;
+      } else if ([11, 12, 13].includes(closingCard.value)) {
+        roundScores[discarderIndex] -= 100;
+      } else if (closingCard.value === 14) {
+        roundScores[discarderIndex] -= 150;
+      }
+    }
+  }
+
+  for (let i = 0; i < playerCount; i++) {
+    game.scores[i] += roundScores[i];
+  }
+
+  checkGameWinner();
+  renderScores();
+  return roundScores;
+}
+
+function checkGameWinner() {
+  const game = window.remiGame;
+  for (let i = 0; i < game.scores.length; i++) {
+    if (game.scores[i] >= 500) {
+      game.winner = i;
+      game.winType = `Total Poin Mencapai ${game.scores[i]} (Juara Utama)`;
+      updateTurnIndicator();
+      break;
+    }
+  }
+}
+
+function startNextRound() {
+  const currentScores = window.remiGame.scores; 
+  window.remiGame = dealCards(4);
+  window.remiGame.scores = currentScores; 
+  window.remiGame.selectedCardIndices = [];
+  window.remiGame.selectedMeldIndex = null;
+  window.remiGame.hasDrawn = false;
+  window.remiGame.hasEatenThisTurn = false;
+  window.remiGame.currentPlayer = 0;
+  window.remiGame.turnNumber += 1;
+  window.remiGame.winner = null;
+  
+  renderScores();
+  updateTurnIndicator();
+  renderPlayerHand();
+  renderOpponentHands();
+  renderOpenMelds();
+  renderDiscardPile();
+  updatePileCounts();
+}
+  
 function updateTurnIndicator() {
   const game = window.remiGame;
   const indicator = document.getElementById("turn-indicator");
