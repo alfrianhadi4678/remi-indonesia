@@ -1385,6 +1385,46 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
   return roundScores;
 }
 
+// PENALTI KELEBIHAN KARTU
+function handleExcessCards(playerIndex) {
+  const game = window.remiGame;
+  const hand = game.players[playerIndex];
+  
+  const MAX_HAND_LIMIT = 7;
+  let penaltyPoints = 0;
+  let removedCards = [];
+
+  while (hand.length > MAX_HAND_LIMIT) {
+    const randomIndex = Math.floor(Math.random() * hand.length);
+    const discardedCard = hand.splice(randomIndex, 1)[0]; 
+    removedCards.push(discardedCard);
+
+    let cardPenalty = 0;
+    if (discardedCard.joker) {
+      cardPenalty = 100;
+    } else if (discardedCard.value >= 2 && discardedCard.value <= 10) {
+      cardPenalty = 5;
+    } else if ([11, 12, 13].includes(discardedCard.value)) {
+      cardPenalty = 10;
+    } else if (discardedCard.value === 14) {
+      cardPenalty = 15;
+    }
+    penaltyPoints += cardPenalty;
+  }
+
+  if (removedCards.length > 0) {
+    game.scores[playerIndex] -= penaltyPoints;
+    
+    const cardNames = removedCards.map(c => c.label + c.suit).join(", ");
+    alert(
+      `⚠️ KELEBIHAN KARTU DI TANGAN!\n\n` +
+      `Pemain ${playerIndex + 1} memegang lebih dari ${MAX_HAND_LIMIT} kartu.\n` +
+      `Sistem otomatis membuang kartu secara acak: [${cardNames}]\n` +
+      `Penalti Kelebihan: -${penaltyPoints} Poin.`
+    );
+  }
+}
+  
 // Helper untuk menghitung nilai nominal poin kartu (plus atau penalti minus)
 function getCardPointValue(card, isPenalty = false) {
   if (card.joker) {
@@ -2588,7 +2628,6 @@ document.getElementById("discard-button").addEventListener("click", () => {
 
   const tutupResult = findAllMelds(remainingHand);
 
-  // Periksa seluruh persyaratan Tutup Tangan.
   // Periksa apakah dari hasil pemecahan kartu terdapat minimal satu jenis Seri
   const hasSeriesInTutup = tutupResult.melds.some(meld => 
     meld.type === "Seri Angka" || 
@@ -2715,6 +2754,11 @@ document.getElementById("discard-button").addEventListener("click", () => {
   }
 
   
+  // ==========================================
+  // PERIKSA KELEBIHAN KARTU DI AKHIR GILIRAN BIASA
+  // ==========================================
+  handleExcessCards(playerIndex);
+
   // Jika bukan Tutup Tangan, jalankan pembuangan biasa.
   renderPlayerHand();
   renderDiscardPile();
