@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.7</p>
+        <p class="game-version">V.3.0.8</p>
       </form>
     </div>
   </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.7</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.8</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -2081,20 +2081,22 @@ document.getElementById("extend-meld-button").addEventListener("click", () => {
   const melds = game.openMelds[playerIndex];
   const meldIndex = game.selectedMeldIndex;
 
-  // Pengecekan ketat: Hanya boleh jika pemain baru saja makan di giliran ini
+  // 1. Wajib baru saja makan dari Discard Pile pada giliran ini
   if (!game.hasEatenThisTurn) {
-    alert("Penambahan kartu ke kombinasi HANYA bisa dilakukan pada giliran yang sama persis setelah kamu makan dari Discard Pile!");
+    alert("Penambahan kartu ke kombinasi hanya bisa dilakukan setelah kamu makan dari Discard Pile.");
     return;
   }
 
-  // Jika pemain sudah terlanjur ambil dari Draw Pile biasa, tidak boleh extend
-  if (game.hasDrawn && !game.hasEatenThisTurn) {
-    alert("Kamu mengambil kartu dari Draw Pile, bukan dari Discard Pile. Penambahan kombinasi tidak diizinkan.");
-    return;
-  }
-
+  // 2. Pastikan ada kombinasi yang dipilih di meja
   if (!Number.isInteger(meldIndex) || !melds[meldIndex]) {
-    alert("Pilih terlebih dahulu kombinasi milikmu yang ingin diperpanjang.");
+    alert("Pilih terlebih dahulu kombinasi yang ingin diperpanjang.");
+    return;
+  }
+
+  // 3. ATURAN UTAMA: Hanya boleh memperpanjang kombinasi yang baru dibentuk dari hasil makan.
+  // Kita cek apakah kombinasi yang dipilih memiliki penanda 'isFromEat' (hasil makan).
+  if (!melds[meldIndex].isFromEat) {
+    alert("Kombinasi ini sudah ada sebelumnya di meja! Berdasarkan aturan, kombinasi lama tidak boleh diperpanjang. Kamu hanya boleh memperpanjang kombinasi yang baru saja terbentuk dari hasil makan kartu Discard Pile.");
     return;
   }
 
@@ -2827,7 +2829,8 @@ targetIndices.sort((a, b) => a - b);
 
   game.openMelds[playerIndex].push({
     type: result.type,
-    cards: [...meldCards]
+    cards: [...meldCards],
+    isFromEat: true // Menandai bahwa kombinasi ini lahir dari hasil makan Discard Pile
   });
   game.selectedMeldIndex = game.openMelds[playerIndex].length - 1;
 
