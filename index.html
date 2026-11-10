@@ -2578,6 +2578,9 @@ document.getElementById("discard-button").addEventListener("click", () => {
     // Simpan kombinasi pada area milik pemain.
     game.openMelds[playerIndex].push(...automaticMelds);
 
+    // Hitung poin Tutup Tangan
+    calculateRoundScores("tutup-tangan", playerIndex);
+    
     // Catat kemenangan.
     game.winner = playerIndex;
     game.winType = "Tutup Tangan";
@@ -2629,6 +2632,9 @@ document.getElementById("discard-button").addEventListener("click", () => {
       closingMeld.closingCard = discarded;
     }
 
+    // Hitung poin Tutup Biasa (berdasarkan kombinasi terbuka dan kartu sisa tangan)
+    calculateRoundScores("tutup-biasa", playerIndex, null, discarded);
+    
     // Catat kemenangan.
     game.winner = playerIndex;
     game.winType = "Tutup Biasa";
