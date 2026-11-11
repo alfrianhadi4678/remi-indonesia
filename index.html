@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.7</p>
+        <p class="game-version">V.3.0.8</p>
       </form>
     </div>
   </section>
@@ -1134,10 +1134,10 @@
       <!-- Pojok kanan bawah: penalti -->
       <div class="panel corner-panel penalty-corner">
         <h3>Penalti kelebihan makan</h3>
-        <div class="player-score"><span>Anda</span><b>0</b></div>
-        <div class="player-score"><span>Pemain 2</span><b>0</b></div>
-        <div class="player-score"><span>Pemain 3</span><b>0</b></div>
-        <div class="player-score"><span>Pemain 4</span><b>0</b></div>
+        <div class="player-score"><span>Anda</span><b data-penalty-score="0">0</b></div>
+        <div class="player-score"><span>Pemain 2</span><b data-penalty-score="1">0</b></div>
+        <div class="player-score"><span>Pemain 3</span><b data-penalty-score="2">0</b></div>
+        <div class="player-score"><span>Pemain 4</span><b data-penalty-score="3">0</b></div>
       </div>
 
     </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.7</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.8</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1385,7 +1385,21 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
   return roundScores;
 }
 
-// PENALTI KELEBIHAN KARTU
+// Fungsi untuk memperbarui tampilan angka penalti di pojok kanan bawah meja secara real-time
+function renderTemporaryPenalties() {
+  const game = window.remiGame;
+  if (!game.temporaryPenalties) {
+    game.temporaryPenalties = Array.from({ length: game.players.length }, () => 0);
+  }
+
+  document.querySelectorAll("[data-penalty-score]").forEach(element => {
+    const playerIndex = Number(element.dataset.penaltyScore);
+    const penaltyVal = game.temporaryPenalties[playerIndex] ?? 0;
+    element.textContent = String(penaltyVal);
+  });
+}
+
+// PENALTI KELEBIHAN KARTU (DENGAN BOBOT BARU & JOKER KEMBALI KE DRAW PILE)
 function handleExcessCards(playerIndex) {
   const game = window.remiGame;
   const hand = game.players[playerIndex];
@@ -1395,7 +1409,6 @@ function handleExcessCards(playerIndex) {
   let removedCards = [];
   let returnedJokersCount = 0;
 
-  // Pastikan objek pelacak penalti sementara per ronde sudah ada di objek game
   if (!game.temporaryPenalties) {
     game.temporaryPenalties = Array.from({ length: game.players.length }, () => 0);
   }
@@ -1411,20 +1424,19 @@ function handleExcessCards(playerIndex) {
       cardPenalty = 100; // Joker tetap penalti 100
       returnedJokersCount++;
 
-      // JOKER DIKEMBALIKAN KE DRAW PILE (bukan ke discard pile)
+      // JOKER DIKEMBALIKAN KE DRAW PILE (Bukan ke Discard Pile)
       if (game.drawPile) {
         game.drawPile.push(discardedCard);
-        // Opsional: Acak ulang draw pile agar Joker tercampur kembali
-        game.drawPile.sort(() => Math.random() - 0.5);
+        game.drawPile.sort(() => Math.random() - 0.5); // Acak kembali tumpukan draw pile
       }
     } else {
-      // PENILAIAN PENALTI BARU
+      // BOBOT PENALTI BARU SESUAI PERMINTAANMU
       if (discardedCard.value >= 2 && discardedCard.value <= 10) {
-        cardPenalty = 10; // Diubah jadi 10
+        cardPenalty = 10; // Kartu angka = 10
       } else if ([11, 12, 13].includes(discardedCard.value)) {
-        cardPenalty = 20; // Diubah jadi 20 (Raja/Gambar)
+        cardPenalty = 20; // Raja / Gambar (J, Q, K) = 20
       } else if (discardedCard.value === 14) {
-        cardPenalty = 50; // Diubah jadi 50 (As)
+        cardPenalty = 50; // As = 50
       }
       
       // Kartu non-joker masuk ke Discard Pile
@@ -1440,22 +1452,16 @@ function handleExcessCards(playerIndex) {
     // Akumulasikan ke penalti sementara ronde ini
     game.temporaryPenalties[playerIndex] += penaltyPoints;
 
-    // Kurangi juga langsung ke skor sementara pemain pada ronde tersebut
-    // (atau nanti dihitung saat calculateRoundScores)
+    // Kurangi ke skor pemain pada ronde tersebut
     game.scores[playerIndex] -= penaltyPoints;
 
-    // REFRESH TAMPILAN UI
-    if (typeof renderScores === 'function') {
-      renderScores();
-    }
-    if (typeof renderDiscardPile === 'function') {
-      renderDiscardPile();
-    }
-    if (typeof updatePileCounts === 'function') {
-      updatePileCounts();
-    }
+    // REFRESH SEMUA TAMPILAN UI TERMASUK PANEL PENALTI KANAN BAWAH
+    if (typeof renderScores === 'function') renderScores();
+    if (typeof renderDiscardPile === 'function') renderDiscardPile();
+    if (typeof updatePileCounts === 'function') updatePileCounts();
+    renderTemporaryPenalties(); // Memperbarui tampilan angka di pojok kanan bawah
     
-    // SUSUN NOTIFIKASI GABUNGAN
+    // NOTIFIKASI GABUNGAN SESUAI PERMINTAAN
     const cardNames = removedCards.map(c => c.joker ? "Joker" : `${c.label}${c.suit}`).join(", ");
     let alertMsg = 
       `⚠️ KELEBIHAN KARTU DI TANGAN!\n\n` +
@@ -1464,7 +1470,7 @@ function handleExcessCards(playerIndex) {
       `Penalti Kelebihan: -${penaltyPoints} Poin.`;
 
     if (returnedJokersCount > 0) {
-      alertMsg += `\n🃏 ${returnedJokersCount} Joker dikembalikan ke Draw Pile.`;
+      alertMsg += `\n🃏 Joker dikembalikan ke Draw Pile.`;
     }
 
     alert(alertMsg);
@@ -1506,8 +1512,13 @@ function startNextRound() {
 
   window.remiGame = dealCards(4);
   window.remiGame.scores = currentScores; 
-  window.remiGame.roundNumber = nextRoundNum; // Simpan nomor ronde baru
+  window.remiGame.roundNumber = nextRoundNum; 
   
+  // ========================================================
+  // RESET PENALTI SEMENTARA KELEBIHAN KARTU MENJADI 0 DI RONDE BARU
+  // ========================================================
+  window.remiGame.temporaryPenalties = Array.from({ length: 4 }, () => 0);
+
   window.remiGame.selectedCardIndices = [];
   window.remiGame.selectedMeldIndex = null;
   window.remiGame.draggedCardIndex = null;
@@ -1525,6 +1536,7 @@ function startNextRound() {
   window.remiGame.openMelds = Array.from({ length: 4 }, () => []);
 
   renderScores();
+  renderTemporaryPenalties(); // Render ulang agar panel kanan bawah kembali ke angka 0
   updateTurnIndicator();
   renderPlayerHand();
   renderOpponentHands();
