@@ -1301,99 +1301,95 @@ window.remiGame.turnNumber = 1;
   discarderIndex: indeks pemain yang membuang kartu terakhir (untuk aturan Kecebur)
   closingCard: objek kartu penutup
 */
-/* =========================================================================
-   1. FUNGSI KALKULASI SKOR AKHIR RONDE (PRESISI 100% SESUAI ATURAN REMI)
-   ========================================================================= */
+
+// Mencari pembagian terbaik kartu di tangan: kartu yang bisa membentuk
+// kombinasi sah dihitung PLUS, sisanya dihitung kartu mati.
+// deductDead = true  -> kartu mati non-Joker dikurangi (Tutup Biasa)
+// deductDead = false -> kartu mati non-Joker tidak dikurangi (Draw Pile habis)
+// Joker yang tidak berkombinasi selalu -100.
+function bestHandMelds(hand, deductDead) {
+  const n = hand.length;
+  const memo = new Map();
+
+  const deadValue = card =>
+    card.joker ? -100 : (deductDead ? -getCardPointValue(card, true) : 0);
+
+  function solve(mask) {
+    if (mask === 0) return 0;
+    if (memo.has(mask)) return memo.get(mask);
+
+    let first = 0;
+    while (!(mask & (1 << first))) first++;
+    const rest = mask & ~(1 << first);
+
+    // Pilihan 1: kartu pertama tidak masuk kombinasi (kartu mati).
+    let best = deadValue(hand[first]) + solve(rest);
+
+    // Pilihan 2: kartu pertama masuk kombinasi bersama sebagian kartu lain.
+    for (let sub = rest; sub > 0; sub = (sub - 1) & rest) {
+      const cards = [hand[first]];
+      for (let i = 0; i < n; i++) {
+        if (sub & (1 << i)) cards.push(hand[i]);
+      }
+      if (cards.length < 3 || cards.length > 9) continue;
+      if (!validateMeld(cards).valid) continue;
+
+      const plus = cards.reduce((sum, c) => sum + getCardPointValue(c, false), 0);
+      best = Math.max(best, plus + solve(rest & ~sub));
+    }
+
+    memo.set(mask, best);
+    return best;
+  }
+
+  return solve((1 << n) - 1);
+}
+
 function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closingCard = null) {
   const game = window.remiGame;
   const playerCount = game.players.length;
   let roundScores = Array.from({ length: playerCount }, () => 0);
 
-  // Pemenang Tutup Tangan langsung mendapat bonus +250
-  if (winType === "tutup-tangan" && winnerIndex !== null) {
-    roundScores[winnerIndex] += 250;
-  }
+  if (winType === "tutup-tangan") {
+    // Tutup Tangan: pemenang langsung +250, tanpa hitung kartu.
+    if (winnerIndex !== null) roundScores[winnerIndex] = 250;
+  } else {
+    for (let i = 0; i < playerCount; i++) {
+      let score = 0;
 
-  // Hitung poin untuk setiap pemain
-  for (let i = 0; i < playerCount; i++) {
-    let score = 0;
-
-    // A. Hitung Poin Plus dari Kombinasi Terbuka di Meja
-    if (game.openMelds && game.openMelds[i]) {
-      game.openMelds[i].forEach(meld => {
-        if (meld.cards) {
-          meld.cards.forEach(card => {
-            score += getCardPointValue(card, false);
-          });
-        }
+      // A. Kombinasi yang sudah terbuka di meja
+      (game.openMelds[i] || []).forEach(meld => {
+        meld.cards.forEach(card => {
+          score += getCardPointValue(card, false);
+        });
       });
+
+      // B. Kartu sisa di tangan (kombinasi di tangan tetap dihitung plus)
+      score += bestHandMelds(game.players[i], winType === "tutup-biasa");
+
+      roundScores[i] = score;
     }
 
-    // B. Evaluasi Kartu Sisa di Tangan Menggunakan Mesin Evaluasi Kombinasi Resmi
-    const hand = game.players[i];
-    if (hand && hand.length > 0) {
-      // Periksa semua kombinasi sah yang berhasil dibentuk dari sisa tangan
-      const meldResult = findAllMelds(hand);
+    // Bonus kartu penutup dan penalti Kecebur (hanya Tutup Biasa)
+    if (winType === "tutup-biasa" && closingCard && winnerIndex !== null) {
+      let bonus = 0;
+      if (closingCard.joker) bonus = 300;
+      else if (closingCard.value >= 2 && closingCard.value <= 10) bonus = 50;
+      else if ([11, 12, 13].includes(closingCard.value)) bonus = 100;
+      else if (closingCard.value === 14) bonus = 150;
 
-      if (meldResult.valid && meldResult.melds.length > 0) {
-        // Ambil semua kartu yang sukses masuk ke dalam kombinasi sah -> POIN PLUS (+)
-        const usedCards = new Set();
-        meldResult.melds.forEach(meld => {
-          meld.cards.forEach(card => {
-            score += getCardPointValue(card, false);
-            usedCards.add(card);
-          });
-        });
+      roundScores[winnerIndex] += bonus;
 
-        // Kartu sisa yang tidak terpakai dalam kombinasi -> POIN MINUS (-)
-        hand.forEach(card => {
-          if (!usedCards.has(card)) {
-            score -= getCardPointValue(card, true);
-          }
-        });
-      } else {
-        // Jika tidak ada kombinasi sah sama sekali, seluruh sisa tangan dihitung penalti minus (-)
-        hand.forEach(card => {
-          score -= getCardPointValue(card, true);
-        });
-      }
-    }
-
-    roundScores[i] += score;
-  }
-
-  // Bonus atau penalti khusus untuk Tutup Biasa (Closing Card & Kecebur)
-  if (winType === "tutup-biasa" && closingCard && winnerIndex !== null) {
-    if (closingCard.joker) {
-      roundScores[winnerIndex] += 300;
-    } else if (closingCard.value >= 2 && closingCard.value <= 10) {
-      roundScores[winnerIndex] += 50;
-    } else if ([11, 12, 13].includes(closingCard.value)) {
-      roundScores[winnerIndex] += 100;
-    } else if (closingCard.value === 14) {
-      roundScores[winnerIndex] += 150;
-    }
-
-    // Penalti Kecebur bagi pemain di sebelah kanan
-    if (discarderIndex !== null && discarderIndex !== winnerIndex) {
-      if (closingCard.joker) {
-        roundScores[discarderIndex] -= 300;
-      } else if (closingCard.value >= 2 && closingCard.value <= 10) {
-        roundScores[discarderIndex] -= 50;
-      } else if ([11, 12, 13].includes(closingCard.value)) {
-        roundScores[discarderIndex] -= 100;
-      } else if (closingCard.value === 14) {
-        roundScores[discarderIndex] -= 150;
+      if (discarderIndex !== null && discarderIndex !== winnerIndex) {
+        roundScores[discarderIndex] -= bonus;
       }
     }
   }
 
-  // Akumulasikan ke skor total permainan
   for (let i = 0; i < playerCount; i++) {
     game.scores[i] += roundScores[i];
   }
 
-  checkGameWinner();
   renderScores();
   return roundScores;
 }
@@ -1509,14 +1505,58 @@ function getCardPointValue(card, isPenalty = false) {
 
 function checkGameWinner() {
   const game = window.remiGame;
-  for (let i = 0; i < game.scores.length; i++) {
-    if (game.scores[i] >= 500) {
-      game.winner = i;
-      game.winType = `Total Poin Mencapai ${game.scores[i]} (Juara Utama)`;
-      updateTurnIndicator();
-      break;
+  const target = game.targetScore || 500;
+  let best = -1;
+
+  game.scores.forEach((score, i) => {
+    if (score >= target && (best === -1 || score > game.scores[best])) best = i;
+  });
+
+  if (best === -1) return false;
+
+  game.winner = best;
+  game.winType = `Total Poin Mencapai ${game.scores[best]} (Juara Utama)`;
+  updateTurnIndicator();
+  return true;
+}
+
+// Mengakhiri ronde: hitung poin, tampilkan hasil, lalu lanjut ke ronde
+// berikutnya (kecuali ada pemain yang mencapai target poin).
+function endRound(winType, winnerIndex, discarderIndex, closingCard, label) {
+  const game = window.remiGame;
+  const roundScores = calculateRoundScores(winType, winnerIndex, discarderIndex, closingCard);
+
+  game.winner = winnerIndex === null ? -1 : winnerIndex;
+  game.winType = label;
+
+  renderPlayerHand();
+  renderOpponentHands();
+  renderOpenMelds();
+  renderDiscardPile();
+  updatePileCounts();
+  updateTurnIndicator();
+
+  // Jeda singkat agar tampilan meja diperbarui sebelum alert muncul.
+  setTimeout(() => {
+    const names = ["Anda", "Pemain 2", "Pemain 3", "Pemain 4"];
+    const fmt = n => (n >= 0 ? "+" : "") + n;
+
+    let message =
+      `${label.toUpperCase()}! Ronde ${game.roundNumber || 1} berakhir.\n\n` +
+      "Poin ronde ini (total):\n" +
+      roundScores
+        .map((s, i) => `- ${names[i]}: ${fmt(s)} (total ${game.scores[i]})`)
+        .join("\n");
+
+    if (checkGameWinner()) {
+      message += `\n\n🏆 ${names[game.winner]} mencapai target poin dan menjadi juara!`;
+      alert(message);
+      return;
     }
-  }
+
+    alert(message + "\n\nKlik OK untuk lanjut ke ronde berikutnya.");
+    startNextRound();
+  }, 80);
 }
 
 function startNextRound() {
@@ -1563,6 +1603,12 @@ function updateTurnIndicator() {
   const indicator = document.getElementById("turn-indicator");
 
   if (!indicator) return;
+
+  // Ronde berakhir tanpa pemenang (Draw Pile habis).
+  if (game.winner === -1) {
+    indicator.textContent = `🏁 ${game.winType} - ronde berakhir`;
+    return;
+  }
 
   // Jika permainan sudah berakhir.
   if (game.winner !== null) {
@@ -2624,29 +2670,6 @@ document.getElementById("draw-button").addEventListener("click", () => {
   renderOpponentHands();
   updatePileCounts();
 
-  // CEK APAKAH DRAW PILE SEKARANG HABIS
-  if (game.drawPile.length === 0) {
-    game.winner = -1; 
-    game.winType = "Draw Pile Habis";
-    updateTurnIndicator();
-
-    // Hitung poin kombinasi untuk setiap pemain berdasarkan aturan Draw Habis
-    const roundScores = calculateRoundScores("draw-habis", null);
-    
-    // Tampilkan informasi perolehan skor ronde ini
-    alert(
-      "DRAW PILE HABIS! Ronde Berakhir.\n\n" +
-      `Skor Ronde Ini:\n` +
-      `- Anda: ${roundScores[0] >= 0 ? '+' : ''}${roundScores[0]}\n` +
-      `- Pemain 2: ${roundScores[1] >= 0 ? '+' : ''}${roundScores[1]}\n` +
-      `- Pemain 3: ${roundScores[2] >= 0 ? '+' : ''}${roundScores[2]}\n` +
-      `- Pemain 4: ${roundScores[3] >= 0 ? '+' : ''}${roundScores[3]}\n\n` +
-      "Klik OK untuk lanjut ke ronde berikutnya."
-    );
-
-    // Otomatis mulai ronde berikutnya setelah alert ditutup
-    startNextRound();
-  }
 });
 
 /* =========================================================================
@@ -2711,6 +2734,12 @@ document.getElementById("discard-button").addEventListener("click", () => {
   game.discardPile.push(discarded);
   game.selectedCardIndices = [];
 
+  // Setelah discard, semua kombinasi di meja pemain ini terkunci
+  // (tidak bisa diperpanjang lagi).
+  game.openMelds[playerIndex].forEach(meld => {
+    meld.isFromEat = false;
+  });
+
   // --- KONDISI A: TUTUP TANGAN ---
   if (canTutupTangan) {
     const automaticMelds = tutupResult.melds.map(meld => ({
@@ -2718,22 +2747,13 @@ document.getElementById("discard-button").addEventListener("click", () => {
       cards: [...meld.cards]
     }));
 
-    const lastMeld = automaticMelds[automaticMelds.length - 1];
-    lastMeld.closingCard = discarded;
+    automaticMelds[automaticMelds.length - 1].closingCard = discarded;
     game.openMelds[playerIndex].push(...automaticMelds);
 
-    calculateRoundScores("tutup-tangan", playerIndex);
-    game.winner = playerIndex;
-    game.winType = "Tutup Tangan";
+    // Semua kartu sudah pindah ke meja, tangan dikosongkan.
+    hand.length = 0;
 
-    renderPlayerHand();
-    renderOpponentHands();
-    renderOpenMelds();
-    renderDiscardPile();
-    updatePileCounts();
-    updateTurnIndicator();
-
-    alert("TUTUP TANGAN BERHASIL! Kamu memenangkan permainan!");
+    endRound("tutup-tangan", playerIndex, null, null, "Tutup Tangan");
     return;
   }
 
@@ -2754,21 +2774,13 @@ document.getElementById("discard-button").addEventListener("click", () => {
 
     if (closingMeld) closingMeld.closingCard = discarded;
 
+    // Semua kartu sudah pindah ke meja, tangan dikosongkan.
+    hand.length = 0;
+
     const playerCount = game.players.length;
     const discarderIndex = (playerIndex - 1 + playerCount) % playerCount;
 
-    calculateRoundScores("tutup-biasa", playerIndex, discarderIndex, discarded);
-    game.winner = playerIndex;
-    game.winType = "Tutup Biasa";
-
-    renderPlayerHand();
-    renderOpponentHands();
-    renderOpenMelds();
-    renderDiscardPile();
-    updatePileCounts();
-    updateTurnIndicator();
-
-    alert("TUTUP BIASA BERHASIL! Kamu memenangkan permainan!");
+    endRound("tutup-biasa", playerIndex, discarderIndex, discarded, "Tutup Biasa");
     return;
   }
 
@@ -2779,25 +2791,9 @@ document.getElementById("discard-button").addEventListener("click", () => {
   renderDiscardPile();
   updatePileCounts();
 
-  // --- KONDISI C: PEMERIKSAAN DRAW PILE HABIS SETELAH DISCARD ---
+  // --- KONDISI C: DRAW PILE HABIS (dicek setelah pemain membuang kartu) ---
   if (game.drawPile.length === 0) {
-    game.winner = -1;
-    game.winType = "Draw Pile Habis";
-    updateTurnIndicator();
-
-    const roundScores = calculateRoundScores("draw-habis", null);
-
-    alert(
-      "DRAW PILE HABIS! Pemain terakhir telah membuang kartu dan ronde resmi berakhir.\n\n" +
-      `Skor Ronde Ini:\n` +
-      `- Anda: ${roundScores[0] >= 0 ? '+' : ''}${roundScores[0]}\n` +
-      `- Pemain 2: ${roundScores[1] >= 0 ? '+' : ''}${roundScores[1]}\n` +
-      `- Pemain 3: ${roundScores[2] >= 0 ? '+' : ''}${roundScores[2]}\n` +
-      `- Pemain 4: ${roundScores[3] >= 0 ? '+' : ''}${roundScores[3]}\n\n` +
-      "Klik OK untuk lanjut ke ronde berikutnya."
-    );
-
-    startNextRound();
+    endRound("draw-habis", null, null, null, "Draw Pile Habis");
     return;
   }
 
