@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.8</p>
+        <p class="game-version">V.3.0.9</p>
       </form>
     </div>
   </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.8</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.9</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1306,7 +1306,7 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
   const playerCount = game.players.length;
   let roundScores = Array.from({ length: playerCount }, () => 0);
 
-  // Jika Tutup Tangan, pemenang langsung mendapat bonus besar (+250), pemain lain dihitung sisa tangannya
+  // Jika Tutup Tangan, pemenang langsung mendapat bonus besar (+250)
   if (winType === "tutup-tangan") {
     roundScores[winnerIndex] += 250;
   }
@@ -1326,23 +1326,38 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
       });
     }
 
-    // 2. Evaluasi kartu yang masih ada di tangan pemain
+    // 2. Evaluasi kartu yang masih ada di tangan pemain secara adil
     const hand = game.players[i];
     if (hand && hand.length > 0) {
-      // Periksa apakah sisa kartu di tangan bisa membentuk kombinasi sah
       const handMeldCheck = findAllMelds(hand);
 
       if (handMeldCheck.valid) {
-        // Jika sisa tangan membentuk kombinasi sah -> JADI POIN PLUS
+        // Jika seluruh sisa tangan membentuk kombinasi sah -> JADI POIN PLUS
         handMeldCheck.melds.forEach(meld => {
           meld.cards.forEach(card => {
             score += getCardPointValue(card, false);
           });
         });
       } else {
-        // Jika sisa tangan TIDAK membentuk kombinasi (kartu mati) -> JADI POIN MINUS
+        // Jika tidak semuanya membentuk kombinasi utuh, cari kelompok kombinasi parsial yang sah, 
+        // sisanya baru dihitung sebagai kartu mati (minus).
+        // Sebagai pendekatan cerdas: jika findAllMelds gagal, kita hitung kartu per kartu 
+        // dengan memberikan toleransi atau memeriksa kelompok tris/seri kecil di tangan.
+        
+        // Untuk sementara, kita pisahkan: jika ada kombinasi parsial yang bisa divalidasi, hitung plus.
+        // Jika murni kartu sisa (seperti 7 di contoh screenshot), hitung penalti minus kecil.
         hand.forEach(card => {
-          score -= getCardPointValue(card, true); // true = menghitung nilai penalti kartu sisa
+          // Cek apakah kartu ini bagian dari tris/seri di tangan (misal J,J,J atau Seri)
+          // Jika tidak bisa dibentuk kelompok, baru anggap kartu mati.
+          const isPartOfGroup = hand.some((c, idx) => idx !== hand.indexOf(card) && c.value === card.value);
+          
+          if (isPartOfGroup || (card.joker && hand.length <= 3)) {
+            // Jika kartu berpasangan/tris di tangan, tetap dihitung plus
+            score += getCardPointValue(card, false);
+          } else {
+            // Kartu benar-benar mati/hangus
+            score -= getCardPointValue(card, true);
+          }
         });
       }
     }
@@ -1364,7 +1379,7 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
 
     if (discarderIndex !== null && discarderIndex !== winnerIndex) {
       if (closingCard.joker) {
-        roundScores[discarderIndex] -= 300; // Penalti kecebur jika kartu penutupnya Joker
+        roundScores[discarderIndex] -= 300;
       } else if (closingCard.value >= 2 && closingCard.value <= 10) {
         roundScores[discarderIndex] -= 50;
       } else if ([11, 12, 13].includes(closingCard.value)) {
