@@ -1393,40 +1393,58 @@ function handleExcessCards(playerIndex) {
   const MAX_HAND_LIMIT = 7;
   let penaltyPoints = 0;
   let removedCards = [];
+  let returnedJokersCount = 0;
 
-  // Selama kartu di tangan lebih dari batas normal (misal > 7)
+  // Pastikan objek pelacak penalti sementara per ronde sudah ada di objek game
+  if (!game.temporaryPenalties) {
+    game.temporaryPenalties = Array.from({ length: game.players.length }, () => 0);
+  }
+
   while (hand.length > MAX_HAND_LIMIT) {
-    // Pilih indeks kartu secara acak dari tangan pemain
     const randomIndex = Math.floor(Math.random() * hand.length);
-    const discardedCard = hand.splice(randomIndex, 1)[0]; // Ambil dari tangan
-    
+    const discardedCard = hand.splice(randomIndex, 1)[0]; 
     removedCards.push(discardedCard);
 
-    // MASUKKAN KE DISCARD PILE: Kartu acak yang kelebihan wajib masuk ke tumpukan buangan
-    if (game.discardPile) {
-      game.discardPile.push(discardedCard);
+    let cardPenalty = 0;
+
+    if (discardedCard.joker) {
+      cardPenalty = 100; // Joker tetap penalti 100
+      returnedJokersCount++;
+
+      // JOKER DIKEMBALIKAN KE DRAW PILE (bukan ke discard pile)
+      if (game.drawPile) {
+        game.drawPile.push(discardedCard);
+        // Opsional: Acak ulang draw pile agar Joker tercampur kembali
+        game.drawPile.sort(() => Math.random() - 0.5);
+      }
+    } else {
+      // PENILAIAN PENALTI BARU
+      if (discardedCard.value >= 2 && discardedCard.value <= 10) {
+        cardPenalty = 10; // Diubah jadi 10
+      } else if ([11, 12, 13].includes(discardedCard.value)) {
+        cardPenalty = 20; // Diubah jadi 20 (Raja/Gambar)
+      } else if (discardedCard.value === 14) {
+        cardPenalty = 50; // Diubah jadi 50 (As)
+      }
+      
+      // Kartu non-joker masuk ke Discard Pile
+      if (game.discardPile) {
+        game.discardPile.push(discardedCard);
+      }
     }
 
-    // Hitung penalti poin untuk kartu yang terbuang secara acak ini
-    let cardPenalty = 0;
-    if (discardedCard.joker) {
-      cardPenalty = 100; // Penalti Joker kelebihan = 100
-    } else if (discardedCard.value >= 2 && discardedCard.value <= 10) {
-      cardPenalty = 5;
-    } else if ([11, 12, 13].includes(discardedCard.value)) {
-      cardPenalty = 10;
-    } else if (discardedCard.value === 14) {
-      cardPenalty = 15; // As
-    }
     penaltyPoints += cardPenalty;
   }
 
-  // Jika ada kartu yang terbuang karena kelebihan
   if (removedCards.length > 0) {
-    // Kurangi skor total pemain
+    // Akumulasikan ke penalti sementara ronde ini
+    game.temporaryPenalties[playerIndex] += penaltyPoints;
+
+    // Kurangi juga langsung ke skor sementara pemain pada ronde tersebut
+    // (atau nanti dihitung saat calculateRoundScores)
     game.scores[playerIndex] -= penaltyPoints;
 
-    // REFRESH TAMPILAN UI: Agar bagian skor/penalti di kanan bawah meja langsung terupdate
+    // REFRESH TAMPILAN UI
     if (typeof renderScores === 'function') {
       renderScores();
     }
@@ -1437,14 +1455,19 @@ function handleExcessCards(playerIndex) {
       updatePileCounts();
     }
     
-    // Beritahu pemain lewat alert atau log
-    const cardNames = removedCards.map(c => `${c.label}${c.suit}`).join(", ");
-    alert(
-      `⚠️ KELEBIHAN KARTU DI TANGAN (KECEBUR MAKAN)!\n\n` +
+    // SUSUN NOTIFIKASI GABUNGAN
+    const cardNames = removedCards.map(c => c.joker ? "Joker" : `${c.label}${c.suit}`).join(", ");
+    let alertMsg = 
+      `⚠️ KELEBIHAN KARTU DI TANGAN!\n\n` +
       `Pemain ${playerIndex + 1} memegang lebih dari ${MAX_HAND_LIMIT} kartu.\n` +
-      `Kartu terbuang secara acak ke Discard Pile: [${cardNames}]\n` +
-      `Penalti Kelebihan: -${penaltyPoints} Poin.`
-    );
+      `Kartu terbuang: [${cardNames}]\n` +
+      `Penalti Kelebihan: -${penaltyPoints} Poin.`;
+
+    if (returnedJokersCount > 0) {
+      alertMsg += `\n🃏 ${returnedJokersCount} Joker dikembalikan ke Draw Pile.`;
+    }
+
+    alert(alertMsg);
   }
 }
   
