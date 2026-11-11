@@ -969,6 +969,12 @@
       height: var(--ikon);
       flex: 0 0 auto;
     }
+
+    /* Tombol TUTUP: satu baris penuh di bawah dua tombol lebar */
+    .action-buttons button.close-game {
+      grid-column: span 6;
+      background: #a02f2f;
+    }
     
   </style>
 </head>
@@ -1128,6 +1134,7 @@
           </button>
           <button id="open-meld-button">BUKA KOMBINASI</button>
           <button id="extend-meld-button" type="button">TAMBAH KE KOMBINASI</button>
+          <button id="close-game-button" class="close-game" type="button" title="Tutup permainan dengan kartu penutup yang dipilih">TUTUP</button>
         </div>
       </section>
 
@@ -1697,6 +1704,7 @@ function nextTurn() {
   game.turnNumber++;
   game.hasDrawn = false;
   game.hasEatenThisTurn = false;
+  game.eatenOnlyLastCard = false;
   game.selectedCardIndices = [];
   game.selectedMeldIndex = null;
   game.selectedDiscardIndex = null;
@@ -2766,31 +2774,11 @@ document.getElementById("discard-button").addEventListener("click", () => {
   }
 
   if (selectedCard.joker) {
-    alert("Joker tidak boleh dibuang ke Discard Pile.");
+    alert("Joker tidak boleh dibuang ke Discard Pile. Joker hanya bisa menjadi kartu penutup lewat tombol TUTUP.");
     return;
   }
 
-  const remainingHand = hand.filter(
-    (card, index) => index !== selectedIndex
-  );
-
-  const tutupResult = findAllMelds(remainingHand);
-
-  const hasSeriesInTutup = tutupResult.melds.some(meld => 
-    meld.type === "Seri Angka" || 
-    meld.type === "Seri Raja" || 
-    meld.type === "Seri As"
-  );
-
-  const canTutupTangan =
-    !game.hasEverEaten[playerIndex] &&
-    !game.hasOpenedInitialSeries[playerIndex] &&
-    !game.hasPawnedJoker[playerIndex] &&
-    remainingHand.length >= 3 &&
-    tutupResult.valid &&
-    hasSeriesInTutup;
-
-  // Buang kartu dari tangan
+  // Buang kartu ke Discard Pile.
   const discarded = hand.splice(selectedIndex, 1)[0];
   game.discardPile.push(discarded);
   game.selectedCardIndices = [];
@@ -2801,50 +2789,6 @@ document.getElementById("discard-button").addEventListener("click", () => {
     meld.isFromEat = false;
   });
 
-  // --- KONDISI A: TUTUP TANGAN ---
-  if (canTutupTangan) {
-    const automaticMelds = tutupResult.melds.map(meld => ({
-      type: meld.type,
-      cards: [...meld.cards]
-    }));
-
-    automaticMelds[automaticMelds.length - 1].closingCard = discarded;
-    game.openMelds[playerIndex].push(...automaticMelds);
-
-    // Semua kartu sudah pindah ke meja, tangan dikosongkan.
-    hand.length = 0;
-
-    endRound("tutup-tangan", playerIndex, null, null, "Tutup Tangan");
-    return;
-  }
-
-  // --- KONDISI B: TUTUP BIASA ---
-  const canTutupBiasa = game.hasOpenedInitialSeries[playerIndex] && tutupResult.valid;
-
-  if (canTutupBiasa) {
-    const automaticMelds = tutupResult.melds.map(meld => ({
-      type: meld.type,
-      cards: [...meld.cards]
-    }));
-
-    game.openMelds[playerIndex].push(...automaticMelds);
-    const allPlayerMelds = game.openMelds[playerIndex];
-    const closingMeld = automaticMelds.length > 0
-      ? automaticMelds[automaticMelds.length - 1]
-      : allPlayerMelds[allPlayerMelds.length - 1];
-
-    if (closingMeld) closingMeld.closingCard = discarded;
-
-    // Semua kartu sudah pindah ke meja, tangan dikosongkan.
-    hand.length = 0;
-
-    const playerCount = game.players.length;
-    const discarderIndex = (playerIndex - 1 + playerCount) % playerCount;
-
-    endRound("tutup-biasa", playerIndex, discarderIndex, discarded, "Tutup Biasa");
-    return;
-  }
-
   // Periksa kelebihan kartu di tangan
   handleExcessCards(playerIndex);
 
@@ -2852,14 +2796,112 @@ document.getElementById("discard-button").addEventListener("click", () => {
   renderDiscardPile();
   updatePileCounts();
 
-  // --- KONDISI C: DRAW PILE HABIS (dicek setelah pemain membuang kartu) ---
+  // Draw Pile habis: ronde berakhir setelah pemain membuang kartu.
   if (game.drawPile.length === 0) {
     endRound("draw-habis", null, null, null, "Draw Pile Habis");
     return;
   }
 
-  // Giliran berlanjut jika Draw Pile masih ada kartu
   nextTurn();
+});
+
+/* =========================================================================
+   TOMBOL TUTUP: menutup permainan dengan satu kartu penutup pilihan pemain.
+   Kartu penutup boleh Joker. Tutup Tangan dan Tutup Biasa dicek di sini.
+   ========================================================================= */
+document.getElementById("close-game-button").addEventListener("click", () => {
+  const game = window.remiGame;
+
+  if (game.winner !== null) return;
+
+  if (!game.hasDrawn && !game.hasEatenThisTurn) {
+    alert("Ambil kartu terlebih dahulu.");
+    return;
+  }
+
+  if (game.selectedCardIndices.length !== 1) {
+    alert("Pilih satu kartu sebagai kartu penutup.");
+    return;
+  }
+
+  const playerIndex = game.currentPlayer;
+  const hand = game.players[playerIndex];
+  const selectedIndex = game.selectedCardIndices[0];
+  const closingCard = hand[selectedIndex];
+
+  if (!closingCard) {
+    alert("Kartu yang dipilih tidak ditemukan. Pilih ulang.");
+    return;
+  }
+
+  // Kartu lain di tangan harus habis terbagi menjadi kombinasi sah.
+  const remainingHand = hand.filter((card, index) => index !== selectedIndex);
+  const tutupResult = findAllMelds(remainingHand);
+
+  if (!tutupResult.valid) {
+    alert("Belum bisa menutup: semua kartu lain di tanganmu harus bisa dibagi menjadi kombinasi yang sah.");
+    return;
+  }
+
+  const hasSeriesInTutup = tutupResult.melds.some(meld =>
+    meld.type === "Seri Angka" ||
+    meld.type === "Seri Raja" ||
+    meld.type === "Seri As"
+  );
+
+  const canTutupTangan =
+    !game.hasEverEaten[playerIndex] &&
+    !game.hasOpenedInitialSeries[playerIndex] &&
+    !game.hasPawnedJoker[playerIndex] &&
+    remainingHand.length >= 3 &&
+    hasSeriesInTutup;
+
+  const canTutupBiasa = game.hasOpenedInitialSeries[playerIndex];
+
+  if (!canTutupTangan && !canTutupBiasa) {
+    alert("Belum bisa menutup: Tutup Biasa mengharuskan kamu sudah membuka Seri. Tutup Tangan mengharuskan belum pernah makan atau membuka kombinasi, dan kartu tanganmu memuat minimal satu Seri.");
+    return;
+  }
+
+  // Keluarkan kartu penutup. Joker tidak masuk Discard Pile.
+  hand.splice(selectedIndex, 1);
+  game.selectedCardIndices = [];
+  if (!closingCard.joker) {
+    game.discardPile.push(closingCard);
+  }
+
+  // Buka semua kombinasi yang tersisa di tangan.
+  const automaticMelds = tutupResult.melds.map(meld => ({
+    type: meld.type,
+    cards: [...meld.cards]
+  }));
+
+  game.openMelds[playerIndex].push(...automaticMelds);
+
+  const allPlayerMelds = game.openMelds[playerIndex];
+  const closingMeld = automaticMelds.length > 0
+    ? automaticMelds[automaticMelds.length - 1]
+    : allPlayerMelds[allPlayerMelds.length - 1];
+
+  if (closingMeld) closingMeld.closingCard = closingCard;
+
+  // Semua kartu sudah pindah ke meja, tangan dikosongkan.
+  hand.length = 0;
+
+  if (canTutupTangan) {
+    endRound("tutup-tangan", playerIndex, null, null, "Tutup Tangan");
+    return;
+  }
+
+  // Kecebur: hanya jika pemain makan SATU kartu terakhir di Discard Pile
+  // (tanpa kartu lain) pada giliran penutupan ini.
+  let discarderIndex = null;
+  if (game.eatenOnlyLastCard) {
+    const playerCount = game.players.length;
+    discarderIndex = (playerIndex - 1 + playerCount) % playerCount;
+  }
+
+  endRound("tutup-biasa", playerIndex, discarderIndex, closingCard, "Tutup Biasa");
 });
 
 
@@ -3038,6 +3080,9 @@ targetIndices.sort((a, b) => a - b);
   game.hasEverEaten[playerIndex] = true;
   
   game.hasEatenThisTurn = true;
+
+  // Catat apakah yang dimakan hanya SATU kartu terakhir (syarat Kecebur).
+  game.eatenOnlyLastCard = takenCards.length === 1;
 
   renderPlayerHand();
   renderOpponentHands();
