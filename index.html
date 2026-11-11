@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.6</p>
+        <p class="game-version">V.3.0.7</p>
       </form>
     </div>
   </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.6</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.7</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1394,32 +1394,55 @@ function handleExcessCards(playerIndex) {
   let penaltyPoints = 0;
   let removedCards = [];
 
+  // Selama kartu di tangan lebih dari batas normal (misal > 7)
   while (hand.length > MAX_HAND_LIMIT) {
+    // Pilih indeks kartu secara acak dari tangan pemain
     const randomIndex = Math.floor(Math.random() * hand.length);
-    const discardedCard = hand.splice(randomIndex, 1)[0]; 
+    const discardedCard = hand.splice(randomIndex, 1)[0]; // Ambil dari tangan
+    
     removedCards.push(discardedCard);
 
+    // MASUKKAN KE DISCARD PILE: Kartu acak yang kelebihan wajib masuk ke tumpukan buangan
+    if (game.discardPile) {
+      game.discardPile.push(discardedCard);
+    }
+
+    // Hitung penalti poin untuk kartu yang terbuang secara acak ini
     let cardPenalty = 0;
     if (discardedCard.joker) {
-      cardPenalty = 100;
+      cardPenalty = 100; // Penalti Joker kelebihan = 100
     } else if (discardedCard.value >= 2 && discardedCard.value <= 10) {
       cardPenalty = 5;
     } else if ([11, 12, 13].includes(discardedCard.value)) {
       cardPenalty = 10;
     } else if (discardedCard.value === 14) {
-      cardPenalty = 15;
+      cardPenalty = 15; // As
     }
     penaltyPoints += cardPenalty;
   }
 
+  // Jika ada kartu yang terbuang karena kelebihan
   if (removedCards.length > 0) {
+    // Kurangi skor total pemain
     game.scores[playerIndex] -= penaltyPoints;
+
+    // REFRESH TAMPILAN UI: Agar bagian skor/penalti di kanan bawah meja langsung terupdate
+    if (typeof renderScores === 'function') {
+      renderScores();
+    }
+    if (typeof renderDiscardPile === 'function') {
+      renderDiscardPile();
+    }
+    if (typeof updatePileCounts === 'function') {
+      updatePileCounts();
+    }
     
-    const cardNames = removedCards.map(c => c.label + c.suit).join(", ");
+    // Beritahu pemain lewat alert atau log
+    const cardNames = removedCards.map(c => `${c.label}${c.suit}`).join(", ");
     alert(
-      `⚠️ KELEBIHAN KARTU DI TANGAN!\n\n` +
+      `⚠️ KELEBIHAN KARTU DI TANGAN (KECEBUR MAKAN)!\n\n` +
       `Pemain ${playerIndex + 1} memegang lebih dari ${MAX_HAND_LIMIT} kartu.\n` +
-      `Sistem otomatis membuang kartu secara acak: [${cardNames}]\n` +
+      `Kartu terbuang secara acak ke Discard Pile: [${cardNames}]\n` +
       `Penalti Kelebihan: -${penaltyPoints} Poin.`
     );
   }
