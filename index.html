@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.10</p>
+        <p class="game-version">V.3.0.11</p>
       </form>
     </div>
   </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.10</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.11</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1302,17 +1302,15 @@ window.remiGame.turnNumber = 1;
   closingCard: objek kartu penutup
 */
 
-// Mencari pembagian terbaik kartu di tangan: kartu yang bisa membentuk
-// kombinasi sah dihitung PLUS, sisanya dihitung kartu mati.
-// deductDead = true  -> kartu mati non-Joker dikurangi (Tutup Biasa)
-// deductDead = false -> kartu mati non-Joker tidak dikurangi (Draw Pile habis)
-// Joker yang tidak berkombinasi selalu -100.
-function bestHandMelds(hand, deductDead) {
+// Mencari pembagian terbaik kartu di tangan: kartu hidup (bisa membentuk
+// kombinasi sah) dihitung PLUS, kartu mati dikurangi.
+// Kartu mati Joker = -100, kartu mati lain = -nilai kartunya.
+function bestHandMelds(hand) {
   const n = hand.length;
   const memo = new Map();
 
   const deadValue = card =>
-    card.joker ? -100 : (deductDead ? -getCardPointValue(card, true) : 0);
+    card.joker ? -100 : -getCardPointValue(card, true);
 
   function solve(mask) {
     if (mask === 0) return 0;
@@ -1350,39 +1348,40 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
   const playerCount = game.players.length;
   let roundScores = Array.from({ length: playerCount }, () => 0);
 
-  if (winType === "tutup-tangan") {
-    // Tutup Tangan: pemenang langsung +250, tanpa hitung kartu.
-    if (winnerIndex !== null) roundScores[winnerIndex] = 250;
-  } else {
-    for (let i = 0; i < playerCount; i++) {
-      let score = 0;
-
-      // A. Kombinasi yang sudah terbuka di meja
-      (game.openMelds[i] || []).forEach(meld => {
-        meld.cards.forEach(card => {
-          score += getCardPointValue(card, false);
-        });
-      });
-
-      // B. Kartu sisa di tangan (kombinasi di tangan tetap dihitung plus)
-      score += bestHandMelds(game.players[i], winType === "tutup-biasa");
-
-      roundScores[i] = score;
+  for (let i = 0; i < playerCount; i++) {
+    // Pemenang Tutup Tangan: langsung +250, kartunya tidak dihitung.
+    if (winType === "tutup-tangan" && i === winnerIndex) {
+      roundScores[i] = 250;
+      continue;
     }
 
-    // Bonus kartu penutup dan penalti Kecebur (hanya Tutup Biasa)
-    if (winType === "tutup-biasa" && closingCard && winnerIndex !== null) {
-      let bonus = 0;
-      if (closingCard.joker) bonus = 300;
-      else if (closingCard.value >= 2 && closingCard.value <= 10) bonus = 50;
-      else if ([11, 12, 13].includes(closingCard.value)) bonus = 100;
-      else if (closingCard.value === 14) bonus = 150;
+    let score = 0;
 
-      roundScores[winnerIndex] += bonus;
+    // Kartu hidup: kombinasi yang sudah terbuka di meja
+    (game.openMelds[i] || []).forEach(meld => {
+      meld.cards.forEach(card => {
+        score += getCardPointValue(card, false);
+      });
+    });
 
-      if (discarderIndex !== null && discarderIndex !== winnerIndex) {
-        roundScores[discarderIndex] -= bonus;
-      }
+    // Kartu di tangan: kartu hidup (+) dan kartu mati (-)
+    score += bestHandMelds(game.players[i]);
+
+    roundScores[i] = score;
+  }
+
+  // Bonus kartu penutup dan penalti Kecebur (hanya Tutup Biasa)
+  if (winType === "tutup-biasa" && closingCard && winnerIndex !== null) {
+    let bonus = 0;
+    if (closingCard.joker) bonus = 300;
+    else if (closingCard.value >= 2 && closingCard.value <= 10) bonus = 50;
+    else if ([11, 12, 13].includes(closingCard.value)) bonus = 100;
+    else if (closingCard.value === 14) bonus = 150;
+
+    roundScores[winnerIndex] += bonus;
+
+    if (discarderIndex !== null && discarderIndex !== winnerIndex) {
+      roundScores[discarderIndex] -= bonus;
     }
   }
 
