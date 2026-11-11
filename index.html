@@ -993,7 +993,7 @@
         <button type="submit">MASUK</button>
         <p id="login-error" role="alert"></p>
 
-        <p class="game-version">V.3.0.11</p>
+        <p class="game-version">V.3.0.12</p>
       </form>
     </div>
   </section>
@@ -1145,7 +1145,7 @@
   </main>
 
   <section class="note">
-    <b>Remi Indonesia — Prototipe tampilan - V.3.0.11</b><br>
+    <b>Remi Indonesia — Prototipe tampilan - V.3.0.12</b><br>
     Setiap pemain memiliki area kombinasi sendiri. Kombinasi yang sudah
     dibuka akan tetap berada di area pemiliknya. Area dapat bertambah
     mengikuti jumlah kombinasi, tanpa digabung dengan pemain lain.
@@ -1302,45 +1302,105 @@ window.remiGame.turnNumber = 1;
   closingCard: objek kartu penutup
 */
 
-// Mencari pembagian terbaik kartu di tangan: kartu hidup (bisa membentuk
-// kombinasi sah) dihitung PLUS, kartu mati dikurangi.
-// Kartu mati Joker = -100, kartu mati lain = -nilai kartunya.
-function bestHandMelds(hand) {
+// Nilai poin satu kombinasi yang sah. Joker bernilai sesuai kartu yang
+// digantikannya: di Seri mengikuti angka urutan, di Tris/Seri As mengikuti
+// nilai kartu kembarannya. Jika ada beberapa kemungkinan posisi Joker,
+// dipakai yang nilainya paling besar.
+function meldPoints(cards) {
+  const pv = v => (v <= 10 ? 5 : (v <= 13 ? 10 : 15));
+  const normal = cards.filter(c => !c.joker);
+  const jokerCount = cards.length - normal.length;
+  const plain = normal.reduce((sum, c) => sum + pv(c.value), 0);
+
+  if (jokerCount === 0) return plain;
+  if (normal.length === 0) return cards.length * 10;
+
+  let best = null;
+  const consider = total => { if (best === null || total > best) best = total; };
+
+  // Kemungkinan 1: Seri (2-10 atau J-K), Joker mengisi angka yang hilang.
+  for (const [min, max] of [[2, 10], [11, 13]]) {
+    const suit = normal[0].suit;
+    const values = normal.map(c => c.value);
+    if (!normal.every(c => c.suit === suit && c.value >= min && c.value <= max)) continue;
+    if (new Set(values).size !== values.length) continue;
+    const len = cards.length;
+    for (let start = min; start <= max - len + 1; start++) {
+      const seq = Array.from({ length: len }, (_, i) => start + i);
+      if (!values.every(v => seq.includes(v))) continue;
+      if (seq.filter(v => !values.includes(v)).length !== jokerCount) continue;
+      consider(seq.reduce((sum, v) => sum + pv(v), 0));
+    }
+  }
+
+  // Kemungkinan 2: Tris atau Seri As, Joker bernilai sama dengan kartu kembar.
+  if (normal.every(c => c.value === normal[0].value)) {
+    consider(cards.length * pv(normal[0].value));
+  }
+
+  return best === null ? plain + jokerCount * 10 : best;
+}
+
+// Mencari pembagian terbaik kartu di tangan.
+// Kartu hidup = membentuk kombinasi sah (+ nilai kombinasi).
+// Kartu mati  = -nilai kartu (Joker mati = -100).
+// Aturan Tris: Tris hanya hidup jika pemain punya Seri (Seri Angka, Seri Raja
+// atau Seri As) di meja ATAU di tangannya. Tanpa Seri, Tris dihitung mati.
+function bestHandMelds(hand, hasSeriesOnTable) {
   const n = hand.length;
-  const memo = new Map();
 
   const deadValue = card =>
     card.joker ? -100 : -getCardPointValue(card, true);
 
-  function solve(mask) {
-    if (mask === 0) return 0;
-    if (memo.has(mask)) return memo.get(mask);
+  function run(allowTris, needSeries) {
+    const memo = new Map();
 
-    let first = 0;
-    while (!(mask & (1 << first))) first++;
-    const rest = mask & ~(1 << first);
+    function solve(mask, seen) {
+      if (mask === 0) return (needSeries && !seen) ? -Infinity : 0;
 
-    // Pilihan 1: kartu pertama tidak masuk kombinasi (kartu mati).
-    let best = deadValue(hand[first]) + solve(rest);
+      const key = mask * 2 + (seen ? 1 : 0);
+      if (memo.has(key)) return memo.get(key);
 
-    // Pilihan 2: kartu pertama masuk kombinasi bersama sebagian kartu lain.
-    for (let sub = rest; sub > 0; sub = (sub - 1) & rest) {
-      const cards = [hand[first]];
-      for (let i = 0; i < n; i++) {
-        if (sub & (1 << i)) cards.push(hand[i]);
+      let first = 0;
+      while (!(mask & (1 << first))) first++;
+      const rest = mask & ~(1 << first);
+
+      // Pilihan 1: kartu pertama mati.
+      let best = deadValue(hand[first]) + solve(rest, seen);
+
+      // Pilihan 2: kartu pertama masuk kombinasi bersama kartu lain.
+      for (let sub = rest; sub > 0; sub = (sub - 1) & rest) {
+        const cards = [hand[first]];
+        for (let i = 0; i < n; i++) {
+          if (sub & (1 << i)) cards.push(hand[i]);
+        }
+        if (cards.length < 3 || cards.length > 9) continue;
+
+        const result = validateMeld(cards);
+        if (!result.valid) continue;
+
+        const isTris = result.type === "Tris";
+        if (isTris && !allowTris) continue;
+
+        best = Math.max(
+          best,
+          meldPoints(cards) + solve(rest & ~sub, seen || !isTris)
+        );
       }
-      if (cards.length < 3 || cards.length > 9) continue;
-      if (!validateMeld(cards).valid) continue;
 
-      const plus = cards.reduce((sum, c) => sum + getCardPointValue(c, false), 0);
-      best = Math.max(best, plus + solve(rest & ~sub));
+      memo.set(key, best);
+      return best;
     }
 
-    memo.set(mask, best);
-    return best;
+    return solve((1 << n) - 1, !!hasSeriesOnTable);
   }
 
-  return solve((1 << n) - 1);
+  // Sudah ada Seri di meja: Tris di tangan boleh hidup.
+  if (hasSeriesOnTable) return run(true, false);
+
+  // Belum ada Seri di meja: pilih yang terbaik antara
+  // (a) tanpa Tris sama sekali, atau (b) Tris hidup asalkan ada Seri di tangan.
+  return Math.max(run(false, false), run(true, true));
 }
 
 function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closingCard = null) {
@@ -1355,17 +1415,19 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
       continue;
     }
 
+    const tableMelds = game.openMelds[i] || [];
     let score = 0;
 
     // Kartu hidup: kombinasi yang sudah terbuka di meja
-    (game.openMelds[i] || []).forEach(meld => {
-      meld.cards.forEach(card => {
-        score += getCardPointValue(card, false);
-      });
+    tableMelds.forEach(meld => {
+      score += meldPoints(meld.cards);
     });
 
+    // Apakah pemain punya Seri di meja? (dipakai untuk menilai Tris di tangan)
+    const hasSeriesOnTable = tableMelds.some(meld => meld.type !== "Tris");
+
     // Kartu di tangan: kartu hidup (+) dan kartu mati (-)
-    score += bestHandMelds(game.players[i]);
+    score += bestHandMelds(game.players[i], hasSeriesOnTable);
 
     roundScores[i] = score;
   }
