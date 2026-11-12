@@ -976,6 +976,73 @@
       background: #a02f2f;
     }
     
+    /* ===== LAYAR PENGATURAN PERMAINAN ===== */
+    #setup-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(16, 23, 20, 0.94);
+    }
+
+    .setup-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 28px;
+      border: 1px solid #b99752;
+      border-radius: 16px;
+      background: #17251f;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, .35);
+    }
+
+    .setup-card h2 {
+      margin: 0 0 18px;
+      color: #e4c77e;
+      text-align: center;
+    }
+
+    .setup-card label {
+      display: block;
+      margin: 14px 0 6px;
+      color: #e8eee9;
+      font-weight: bold;
+    }
+
+    .setup-card input,
+    .setup-card select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #64796c;
+      border-radius: 8px;
+      background: #0e1712;
+      color: white;
+      font-size: 16px;
+    }
+
+    .setup-card .setup-hint {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #c6d5cc;
+    }
+
+    .setup-card button {
+      margin-top: 22px;
+      padding: 13px;
+      background: #b99752;
+      color: #17251f;
+      font-size: 16px;
+    }
+
+    #setup-error {
+      min-height: 20px;
+      margin: 12px 0 0;
+      color: #ff8b8b;
+      text-align: center;
+    }
+    
   </style>
 </head>
 <body>
@@ -1006,10 +1073,31 @@
 
   <!-- APLIKASI PERMAINAN: DIBUKA SETELAH LOGIN -->
   <div id="game-app" hidden>
+      <!-- LAYAR PENGATURAN PERMAINAN (muncul sebelum permainan dimulai) -->
+  <div id="setup-screen" hidden>
+    <form class="setup-card" id="setup-form" novalidate>
+      <h2>Pengaturan Permainan</h2>
+
+      <label for="setup-target">Target poin untuk menang</label>
+      <input id="setup-target" type="number" min="500" max="2000" step="1" value="500" required>
+      <p class="setup-hint">Antara 500 dan 2000. Bawaan: 500.</p>
+
+      <label for="setup-joker">Jumlah Joker</label>
+      <select id="setup-joker">
+        <option value="2">2 Joker</option>
+        <option value="3">3 Joker</option>
+        <option value="4" selected>4 Joker</option>
+      </select>
+
+      <p id="setup-error" role="alert"></p>
+      <button type="submit">MULAI PERMAINAN</button>
+    </form>
+  </div>
     <div id="session-bar">
       <span id="session-user"></span>
       <div class="session-actions">
         <button type="button" id="admin-refresh-button" hidden>↻ Refresh Permainan</button>
+        <button type="button" id="new-game-button">Permainan Baru</button>
         <button type="button" id="logout-button">Keluar</button>
       </div>
     </div>
@@ -1049,7 +1137,7 @@
             <!-- Pojok kanan atas: giliran dan skor -->
       <div class="panel corner-panel score-corner">
         <p id="turn-indicator">🟢 Giliran Anda</p>
-        <h3>Skor sementara</h3>
+        <h3>Skor sementara <span id="target-info"></span></h3>
         <div class="player-score"><span>Anda</span><b data-player-score="0">0</b></div>
         <div class="player-score"><span>Pemain 2</span><b data-player-score="1">0</b></div>
         <div class="player-score"><span>Pemain 3</span><b data-player-score="2">0</b></div>
@@ -1174,7 +1262,7 @@ const suits = [
   { name: "Keriting", symbol: "♣", color: "black" }
 ];
 
-function createDeck() {
+function createDeck(jokerCount = 4) {
   const deck = [];
 
   for (const suit of suits) {
@@ -1198,28 +1286,16 @@ function createDeck() {
     }
   }
 
-  
-  // 2 Joker merah
-  for (let i = 0; i < 2; i++) {
+  // Joker: jumlahnya 2, 3, atau 4. Warna bergantian merah dan hitam.
+  for (let i = 0; i < jokerCount; i++) {
+    const isRed = i % 2 === 0;
     deck.push({
       value: 0,
       label: "JOKER",
       suit: "★",
-      color: "red",
+      color: isRed ? "red" : "black",
       joker: true,
-      jokerColor: "red"
-    });
-  }
-
-  // 2 Joker hitam
-  for (let i = 0; i < 2; i++) {
-    deck.push({
-      value: 0,
-      label: "JOKER",
-      suit: "★",
-      color: "black",
-      joker: true,
-      jokerColor: "black"
+      jokerColor: isRed ? "red" : "black"
     });
   }
 
@@ -1236,12 +1312,12 @@ function shuffleDeck(deck) {
   return deck;
 }
 
-function dealCards(playerCount = 4) {
+function dealCards(playerCount = 4, jokerCount = 4) {
   if (playerCount < 2 || playerCount > 4) {
     throw new Error("Jumlah pemain harus 2 sampai 4.");
   }
 
-  const deck = shuffleDeck(createDeck());
+  const deck = shuffleDeck(createDeck(jokerCount));
   const players = Array.from(
     { length: playerCount },
     () => []
@@ -1290,6 +1366,12 @@ function renderScores() {
 
     element.textContent = String(score);
   });
+  
+  // Tampilkan target poin di panel skor.
+  const targetInfo = document.getElementById("target-info");
+  if (targetInfo) {
+    targetInfo.textContent = "(target " + (window.remiGame.targetScore || 500) + ")";
+  }
 }
 
 // Render skor awal ketika permainan dimuat.
@@ -1627,13 +1709,18 @@ function endRound(winType, winnerIndex, discarderIndex, closingCard, label) {
   }, 80);
 }
 
-function startNextRound() {
-  const currentScores = window.remiGame.scores; 
-  const nextRoundNum = (window.remiGame.roundNumber || 1) + 1; // Tambah ronde
+function startNextRound(newGameOptions = null) {
+  const previous = window.remiGame;
+  const targetScore = newGameOptions ? newGameOptions.targetScore : previous.targetScore;
+  const jokerCount = newGameOptions ? newGameOptions.jokerCount : previous.jokerCount;
+  const currentScores = newGameOptions ? null : previous.scores;
+  const nextRoundNum = newGameOptions ? 1 : (previous.roundNumber || 1) + 1; // Tambah ronde
 
-  window.remiGame = dealCards(4);
-  window.remiGame.scores = currentScores; 
-  window.remiGame.roundNumber = nextRoundNum; 
+  window.remiGame = dealCards(4, jokerCount || 4);
+  if (currentScores) window.remiGame.scores = currentScores;
+  window.remiGame.targetScore = targetScore || 500;
+  window.remiGame.jokerCount = jokerCount || 4;
+  window.remiGame.roundNumber = nextRoundNum;
   
   // ========================================================
   // RESET PENALTI SEMENTARA KELEBIHAN KARTU MENJADI 0 DI RONDE BARU
@@ -3099,6 +3186,50 @@ targetIndices.sort((a, b) => a - b);
   );
 });
 
+
+/* =========================================================================
+   PENGATURAN PERMAINAN: target poin dan jumlah Joker, sebelum permainan mulai
+   ========================================================================= */
+function openSetup() {
+  const game = window.remiGame;
+  document.getElementById("setup-target").value = game.targetScore || 500;
+  document.getElementById("setup-joker").value = String(game.jokerCount || 4);
+  document.getElementById("setup-error").textContent = "";
+  document.getElementById("setup-screen").hidden = false;
+}
+
+document.getElementById("setup-form").addEventListener("submit", event => {
+  event.preventDefault();
+
+  const target = Number(document.getElementById("setup-target").value);
+  const jokerCount = Number(document.getElementById("setup-joker").value);
+  const error = document.getElementById("setup-error");
+
+  if (!Number.isInteger(target) || target < 500 || target > 2000) {
+    error.textContent = "Target poin harus bilangan bulat antara 500 dan 2000.";
+    return;
+  }
+
+  if (![2, 3, 4].includes(jokerCount)) {
+    error.textContent = "Jumlah Joker harus 2, 3, atau 4.";
+    return;
+  }
+
+  document.getElementById("setup-screen").hidden = true;
+  startNextRound({ targetScore: target, jokerCount: jokerCount });
+});
+
+document.getElementById("new-game-button").addEventListener("click", () => {
+  const game = window.remiGame;
+
+  // Jika permainan masih berjalan, minta konfirmasi dulu.
+  if (game.winner === null && (game.roundNumber || 1) + game.turnNumber > 2) {
+    if (!confirm("Permainan yang sedang berjalan akan dihentikan. Lanjutkan?")) return;
+  }
+
+  openSetup();
+});
+  
 </script>
 
 <script>
@@ -3172,6 +3303,7 @@ function setGameMode(mode) {
       modeMenu.hidden = true;
       setGameMode("live");
     }
+      openSetup();
   }
 
   loginForm.addEventListener("submit", function (event) {
