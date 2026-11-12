@@ -1442,7 +1442,7 @@ function calculateRoundScores(winType, winnerIndex, discarderIndex = null, closi
   // Bonus kartu penutup dan penalti Kecebur (hanya Tutup Biasa)
   if (winType === "tutup-biasa" && closingCard && winnerIndex !== null) {
     let bonus = 0;
-    if (closingCard.joker) bonus = 300;
+    if (closingCard.joker) bonus = 200;
     else if (closingCard.value >= 2 && closingCard.value <= 10) bonus = 50;
     else if ([11, 12, 13].includes(closingCard.value)) bonus = 100;
     else if (closingCard.value === 14) bonus = 150;
