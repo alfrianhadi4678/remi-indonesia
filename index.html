@@ -1220,6 +1220,94 @@
       .middle { min-height: 250px; margin: 0 auto; }
     }
 
+  
+    /* =====================================================================
+       TOMBOL CEKI
+       ===================================================================== */
+    .ceki-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      height: auto;
+      margin: 0 0 0 10px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 2px solid #6e1b1b;
+      background: #330f0f;
+      color: #9a6262;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+      letter-spacing: .5px;
+      text-transform: none;
+      vertical-align: middle;
+      cursor: default;
+      box-shadow: none;
+      transition: background .2s, color .2s, box-shadow .2s, border-color .2s;
+    }
+    .ceki-btn .ceki-ikon { display: none; }
+    .ceki-btn[data-state="ready"] {
+      border-color: #ff9d9d;
+      color: #ffd9d9;
+      background: #5c1616;
+      cursor: pointer;
+      animation: cekiDenyut 1.1s ease-in-out infinite;
+    }
+    .ceki-btn[data-state="on"] {
+      border-color: #ffd0d0;
+      background: #e53935;
+      color: #fff;
+      box-shadow: 0 0 10px 3px rgba(255, 80, 80, .85);
+      animation: none;
+    }
+    @keyframes cekiDenyut {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 120, 120, .0); }
+      50%      { box-shadow: 0 0 8px 2px rgba(255, 120, 120, .7); }
+    }
+    #ceki-toast {
+      position: fixed;
+      left: 50%;
+      top: 18px;
+      transform: translateX(-50%);
+      background: #e53935;
+      color: #fff;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 999px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .5);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+    }
+    #ceki-toast.tampil { opacity: 1; }
+
+    /* Nama pemain samping: judul memakai satu baris penuh agar muat tombol CEKI */
+    @media (min-width: 851px) {
+      .table > .opponents > .player:nth-child(1) {
+        grid-template-rows: auto auto minmax(0, 1fr);
+        grid-template-areas:
+          "title title"
+          "hand  label"
+          "hand  melds";
+      }
+      .table > .opponents > .player:nth-child(3) {
+        grid-template-rows: auto auto minmax(0, 1fr);
+        grid-template-areas:
+          "title title"
+          "label hand"
+          "melds hand";
+      }
+    }
+
+    /* Layar sangat sempit: tombol CEKI menjadi bulatan merah bertanda seru */
+    @media (max-width: 400px) {
+      .ceki-btn { width: 22px; height: 22px; padding: 0; margin-left: 6px; font-size: 14px; }
+      .ceki-btn .ceki-teks { display: none; }
+      .ceki-btn .ceki-ikon { display: inline; }
+    }
+
   </style>
 </head>
 <body>
@@ -1268,6 +1356,12 @@
         <option value="2">2 Joker</option>
         <option value="3">3 Joker</option>
         <option value="4" selected>4 Joker</option>
+      </select>
+
+      <label for="setup-ceki">Pengumuman CEKI</label>
+      <select id="setup-ceki">
+        <option value="manual" selected>Manual (pemain menekan tombol CEKI)</option>
+        <option value="otomatis">Otomatis (menyala sendiri)</option>
       </select>
 
       <p id="setup-error" role="alert"></p>
@@ -1328,7 +1422,7 @@
       <div class="opponents">
         <!-- PEMAIN 2 -->
         <section class="player">
-          <h3>Pemain 2</h3>
+          <h3><span class="nama-pemain">Pemain 2</span><button type="button" class="ceki-btn" data-seat="1" data-state="off" title="Umumkan CEKI: tinggal butuh satu kartu untuk menutup" disabled><span class="ceki-teks">CEKI!!!</span><span class="ceki-ikon">!</span></button></h3>
           <div class="cards" id="player-1-hand"></div>
           <p>Kombinasi Terbuka</p>
           <div class="meld-area" id="player-1-melds"></div>
@@ -1336,7 +1430,7 @@
       
         <!-- PEMAIN 3 -->
         <section class="player">
-          <h3>Pemain 3</h3>
+          <h3><span class="nama-pemain">Pemain 3</span><button type="button" class="ceki-btn" data-seat="2" data-state="off" title="Umumkan CEKI: tinggal butuh satu kartu untuk menutup" disabled><span class="ceki-teks">CEKI!!!</span><span class="ceki-ikon">!</span></button></h3>
           <div class="cards" id="player-2-hand"></div>
           <p>Kombinasi Terbuka</p>
           <div class="meld-area" id="player-2-melds"></div>
@@ -1344,7 +1438,7 @@
       
         <!-- PEMAIN 4 -->
         <section class="player">
-          <h3>Pemain 4</h3>
+          <h3><span class="nama-pemain">Pemain 4</span><button type="button" class="ceki-btn" data-seat="3" data-state="off" title="Umumkan CEKI: tinggal butuh satu kartu untuk menutup" disabled><span class="ceki-teks">CEKI!!!</span><span class="ceki-ikon">!</span></button></h3>
           <div class="cards" id="player-3-hand"></div>
           <p>Kombinasi Terbuka</p>
           <div class="meld-area" id="player-3-melds"></div>
@@ -1366,7 +1460,7 @@
       </div>
       
       <section class="player">
-        <h3 id="hand-title">Kartu Anda</h3>
+        <h3 id="hand-title"><span id="hand-title-text">Kartu Anda</span><button type="button" class="ceki-btn" data-seat="0" data-state="off" title="Umumkan CEKI: tinggal butuh satu kartu untuk menutup" disabled><span class="ceki-teks">CEKI!!!</span><span class="ceki-ikon">!</span></button></h3>
         <div class="cards" id="player-hand"></div>
 
         <p>Kombinasi terbuka</p>
@@ -1895,6 +1989,7 @@ function startNextRound(newGameOptions = null) {
   const previous = window.remiGame;
   const targetScore = newGameOptions ? newGameOptions.targetScore : previous.targetScore;
   const jokerCount = newGameOptions ? newGameOptions.jokerCount : previous.jokerCount;
+  const cekiMode = newGameOptions ? (newGameOptions.cekiMode || "manual") : (previous.cekiMode || "manual");
   const currentScores = newGameOptions ? null : previous.scores;
   const nextRoundNum = newGameOptions ? 1 : (previous.roundNumber || 1) + 1; // Tambah ronde
 
@@ -1902,6 +1997,7 @@ function startNextRound(newGameOptions = null) {
   if (currentScores) window.remiGame.scores = currentScores;
   window.remiGame.targetScore = targetScore || 500;
   window.remiGame.jokerCount = jokerCount || 4;
+  window.remiGame.cekiMode = cekiMode;
   window.remiGame.roundNumber = nextRoundNum;
   
   // ========================================================
@@ -1933,6 +2029,7 @@ function startNextRound(newGameOptions = null) {
   renderOpenMelds();
   renderDiscardPile();
   updatePileCounts();
+  if (typeof snapshotCekiSemua === "function") { snapshotCekiSemua(); renderCekiButtons(); }
 }
   
 function updateTurnIndicator() {
@@ -1966,6 +2063,7 @@ function updateTurnIndicator() {
 
 function nextTurn() {
   const game = window.remiGame;
+  const pemainSelesai = game.currentPlayer;
 
   game.currentPlayer =
     (game.currentPlayer + 1) % game.players.length;
@@ -1979,11 +2077,15 @@ function nextTurn() {
   game.selectedDiscardIndex = null;
   game.selectedDiscardIndices = [];
 
+  // CEKI pemain yang baru selesai giliran dihitung ulang (manual: dikosongkan).
+  if (typeof snapshotCeki === "function") snapshotCeki(pemainSelesai);
+
   updateTurnIndicator();
   renderPlayerHand();
   renderOpponentHands();
   renderOpenMelds();
   renderDiscardPile();
+  if (typeof renderCekiButtons === "function") renderCekiButtons();
 }
   
 window.remiGame.hasOpenedInitialSeries =
@@ -2439,7 +2541,7 @@ function renderPlayerHand() {
   // Area "Kartu Anda" khusus untuk pemain pertama (indeks 0).
   const hand = game.players[0];
 
-  titleElement.textContent = `Kartu Anda · ${hand.length} kartu`;
+  document.getElementById("hand-title-text").textContent = `Kartu Anda · ${hand.length} kartu`;
   handElement.replaceChildren();
 
   hand.forEach((card, index) => {
@@ -3165,7 +3267,7 @@ document.getElementById("close-game-button").addEventListener("click", () => {
   // Kecebur: hanya jika pemain makan SATU kartu terakhir di Discard Pile
   // (tanpa kartu lain) pada giliran penutupan ini.
   let discarderIndex = null;
-  if (game.eatenOnlyLastCard) {
+  if (game.eatenOnlyLastCard && game.cekiAnnounced && game.cekiAnnounced[playerIndex]) {
     const playerCount = game.players.length;
     discarderIndex = (playerIndex - 1 + playerCount) % playerCount;
   }
@@ -3376,6 +3478,7 @@ function openSetup() {
   const game = window.remiGame;
   document.getElementById("setup-target").value = game.targetScore || 500;
   document.getElementById("setup-joker").value = String(game.jokerCount || 4);
+  document.getElementById("setup-ceki").value = game.cekiMode || "manual";
   document.getElementById("setup-error").textContent = "";
   document.getElementById("setup-screen").hidden = false;
 }
@@ -3398,7 +3501,7 @@ document.getElementById("setup-form").addEventListener("submit", event => {
   }
 
   document.getElementById("setup-screen").hidden = true;
-  startNextRound({ targetScore: target, jokerCount: jokerCount });
+  startNextRound({ targetScore: target, jokerCount: jokerCount, cekiMode: document.getElementById("setup-ceki").value === "otomatis" ? "otomatis" : "manual" });
 });
 
 document.getElementById("new-game-button").addEventListener("click", () => {
@@ -3663,6 +3766,145 @@ function fitRowHands() {
   });
   window.addEventListener("resize", () => { fitRowHands(); fitMeldCards(); fitSideHands(); if (typeof renderDiscardPile === "function") try { renderDiscardPile(); } catch (e) {} });
   fitRowHands();
+})();
+</script>
+
+<script>
+/* =========================================================================
+   CEKI: pemain tinggal butuh SATU kartu lagi untuk bisa TUTUP.
+   - Manual: pemain menekan tombol CEKI (hanya bisa jika memang ceki).
+   - Otomatis: CEKI menyala sendiri.
+   Pengumuman dipakai untuk Kecebur: tanpa CEKI, pemain sebelumnya tidak kecebur.
+   ========================================================================= */
+(function () {
+  const kunciKartu = c => (c.joker ? "J" : c.suit + c.value);
+  let kandidat = null;
+  const cache = new Map();
+
+  function daftarKandidat() {
+    if (!kandidat) kandidat = createDeck(1); // 52 kartu + 1 Joker
+    return kandidat;
+  }
+
+  // Sama dengan syarat tombol TUTUP, untuk satu pilihan kartu penutup.
+  function bisaTutup(playerIndex, hand, closingIndex) {
+    const game = window.remiGame;
+    const remaining = hand.filter((_, i) => i !== closingIndex);
+    const hasil = findAllMelds(remaining);
+    if (!hasil.valid) return false;
+
+    const adaSeri = hasil.melds.some(m =>
+      m.type === "Seri Angka" || m.type === "Seri Raja" || m.type === "Seri As");
+
+    const tutupTangan =
+      !game.hasEverEaten[playerIndex] &&
+      !game.hasOpenedInitialSeries[playerIndex] &&
+      !game.hasPawnedJoker[playerIndex] &&
+      remaining.length >= 3 &&
+      adaSeri;
+
+    return tutupTangan || !!game.hasOpenedInitialSeries[playerIndex];
+  }
+
+  function isCeki(playerIndex) {
+    const game = window.remiGame;
+    if (!game || game.winner !== null) return false;
+    // Setelah mengambil kartu di gilirannya sendiri, pemain bukan lagi "menunggu".
+    if (game.currentPlayer === playerIndex && (game.hasDrawn || game.hasEatenThisTurn)) return false;
+
+    const hand = game.players[playerIndex];
+    if (!hand || hand.length > 8) return false;
+
+    const kunci = [
+      playerIndex,
+      hand.map(kunciKartu).sort().join(","),
+      game.hasOpenedInitialSeries[playerIndex] ? 1 : 0,
+      game.hasEverEaten[playerIndex] ? 1 : 0,
+      game.hasPawnedJoker[playerIndex] ? 1 : 0
+    ].join("|");
+    if (cache.has(kunci)) return cache.get(kunci);
+
+    let hasil = false;
+    for (const kartu of daftarKandidat()) {
+      const uji = [...hand, kartu];
+      const sudah = new Set();
+      for (let i = 0; i < uji.length && !hasil; i++) {
+        const k = kunciKartu(uji[i]);
+        if (sudah.has(k)) continue;
+        sudah.add(k);
+        if (bisaTutup(playerIndex, uji, i)) hasil = true;
+      }
+      if (hasil) break;
+    }
+    if (cache.size > 500) cache.clear();
+    cache.set(kunci, hasil);
+    return hasil;
+  }
+
+  function keadaanCeki(playerIndex) {
+    const game = window.remiGame;
+    if (game.winner !== null) return "off";
+    if (game.cekiAnnounced && game.cekiAnnounced[playerIndex]) return "on";
+    if (game.cekiMode !== "otomatis" && isCeki(playerIndex)) return "ready";
+    return "off";
+  }
+
+  window.renderCekiButtons = function () {
+    document.querySelectorAll(".ceki-btn").forEach(btn => {
+      const seat = Number(btn.dataset.seat);
+      const state = keadaanCeki(seat);
+      btn.dataset.state = state;
+      btn.disabled = state !== "ready";
+      btn.setAttribute("aria-pressed", state === "on" ? "true" : "false");
+    });
+  };
+
+  // Dipanggil saat giliran pemain selesai (dan saat ronde dimulai untuk semua).
+  window.snapshotCeki = function (playerIndex) {
+    const game = window.remiGame;
+    if (!game.cekiAnnounced) game.cekiAnnounced = [false, false, false, false];
+    game.cekiAnnounced[playerIndex] =
+      game.cekiMode === "otomatis" ? isCeki(playerIndex) : false;
+  };
+
+  window.snapshotCekiSemua = function () {
+    const game = window.remiGame;
+    game.cekiAnnounced = [false, false, false, false];
+    for (let i = 0; i < 4; i++) snapshotCeki(i);
+  };
+
+  function toast(teks) {
+    let el = document.getElementById("ceki-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "ceki-toast";
+      document.body.appendChild(el);
+    }
+    el.textContent = teks;
+    el.classList.add("tampil");
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => el.classList.remove("tampil"), 2200);
+  }
+
+  document.querySelectorAll(".ceki-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const game = window.remiGame;
+      const seat = Number(btn.dataset.seat);
+      if (btn.dataset.state !== "ready") return;
+      game.cekiAnnounced[seat] = true;
+      renderCekiButtons();
+      toast(seat === 0 ? "📢 Anda: CEKI!!!" : `📢 Pemain ${seat + 1}: CEKI!!!`);
+    });
+  });
+
+  window.isCeki = isCeki;
+  const asliRender = window.renderPlayerHand;
+  window.renderPlayerHand = function () {
+    const hasil = asliRender.apply(this, arguments);
+    renderCekiButtons();
+    return hasil;
+  };
+  renderCekiButtons();
 })();
 </script>
 
