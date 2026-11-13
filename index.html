@@ -971,6 +971,7 @@
       background: #a02f2f;
     }
     
+
     /* ===== LAYAR PENGATURAN PERMAINAN ===== */
     #setup-screen {
       position: fixed;
@@ -1037,7 +1038,188 @@
       color: #ff8b8b;
       text-align: center;
     }
-    
+
+  
+    /* =====================================================================
+       TAMPILAN RESPONSIF (HP, tablet, laptop)
+       Blok ini sengaja diletakkan paling akhir agar menimpa aturan di atasnya.
+       ===================================================================== */
+    html { -webkit-text-size-adjust: 100%; }
+    body { overflow-x: hidden; }
+
+    .table {
+      container-type: inline-size;
+      container-name: meja;
+    }
+
+
+    /* Kepala halaman dan menu mode dibuat ringkas di semua ukuran layar */
+    header { padding: 8px 12px; }
+    header h1 { font-size: 22px; margin: 0 0 2px; }
+    header p { font-size: 12px; }
+    #mode-menu { padding: 8px 12px !important; }
+    #mode-menu strong { display: inline !important; margin: 0 8px 0 0 !important; font-size: 13px; }
+    #mode-menu button { width: auto; margin: 0 4px; padding: 7px 14px; font-size: 13px; }
+    #mode-menu p { margin: 6px 0 0 !important; font-size: 12px; }
+
+    /* Tulisan Discard Pile diturunkan agar tidak tertutup lingkaran kartu */
+    #discard-pile h3 { top: calc(50% + 148px) !important; }
+    #discard-pile #discard-count { top: calc(50% + 165px) !important; }
+
+    /* ---------- LAYAR LEBAR (laptop dan desktop, >= 851px) ---------- */
+    @media (min-width: 851px) {
+      .table {
+        /* Kotak samping mengecil mengikuti lebar layar */
+        --sisi: clamp(230px, calc((100vw - 410px) / 2), 370px);
+        /* Tinggi kotak samping mengikuti tinggi layar */
+        --tinggi-sisi: clamp(380px, calc(100vh - 330px), 520px);
+        grid-template-columns: var(--sisi) minmax(0, 1fr) var(--sisi);
+      }
+      .middle { min-height: 290px; }
+    }
+
+    /* Kotak tengah belum cukup lebar untuk tombol di samping kartu */
+    @container meja (max-width: 1440px) {
+      .table > .player {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+        grid-template-areas:
+          "title"
+          "hand"
+          "buttons"
+          "label"
+          "melds";
+      }
+      .table > .player .action-buttons {
+        --sisi: 70px;
+        --tinggi-bawah: 34px;
+        --ikon: 28px;
+        width: min(100%, 420px);
+        margin-top: 8px;
+      }
+    }
+
+    /* ---------- TABLET DAN HP (<= 850px) ---------- */
+    @media (max-width: 850px) {
+      #session-bar { padding: 8px 10px; font-size: 13px; }
+      #session-bar button { padding: 6px 10px; font-size: 13px; }
+
+      .layout { padding: 6px; gap: 8px; }
+
+      .table {
+        padding: 8px;
+        border-width: 4px;
+        border-radius: 16px;
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: none;
+        grid-template-areas:
+          "score score"
+          "p3    p3"
+          "p2    p4"
+          "mid   mid"
+          "p1    p1"
+          "pen   pen";
+      }
+
+      .table > .score-corner   { grid-area: score; }
+      .table > .opponents > .player:nth-child(2) { grid-area: p3; }
+      .table > .opponents > .player:nth-child(1) { grid-area: p2; }
+      .table > .opponents > .player:nth-child(3) { grid-area: p4; }
+      .table > .middle         { grid-area: mid; }
+      .table > .player         { grid-area: p1; }
+      .table > .penalty-corner { grid-area: pen; }
+
+      .player, .panel { padding: 8px; border-radius: 10px; }
+      .player h3 { margin: 0 0 6px; font-size: 13px; }
+      .player > p { margin: 6px 0 4px; font-size: 12px; }
+
+      /* Pemain 2, 3, 4: kartu tangan satu baris yang saling menumpuk */
+      .table > .opponents > .player:nth-child(n) > .cards {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        text-align: left;
+        min-height: 0;
+      }
+      .table > .opponents > .player:nth-child(n) > p,
+      .table > .opponents > .player:nth-child(n) > h3 { text-align: left; }
+
+      .table > .opponents > .player:nth-child(n) .meld-area {
+        min-height: 50px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 6px;
+        overflow-x: visible;
+      }
+
+      /* Kartu tangan Anda: satu baris, menumpuk jika kurang tempat */
+      .table > .player > .cards { flex-wrap: nowrap; min-height: 56px; }
+      .table > .player .meld-area { min-height: 50px; gap: 8px; }
+
+      /* Kartu lebih kecil */
+      .card { width: 36px; height: 52px; font-size: 14px; padding: 3px; }
+      .card-corner { font-size: 12px; }
+      .card-corner.top { top: 2px; left: 3px; }
+      .card-corner.bottom { right: 3px; bottom: 2px; }
+      .card-corner .corner-suit { font-size: 10px; }
+      .card-center-suit { font-size: 20px; }
+      .joker-label { font-size: 8px; }
+      .table > .player > .cards .card { width: 40px; height: 58px; }
+
+      /* Tombol aksi memenuhi lebar kotak */
+      .table > .player .action-buttons {
+        --sisi: 62px;
+        --tinggi-bawah: 38px;
+        --ikon: 24px;
+        --gap: 5px;
+        width: 100%;
+        max-width: none;
+      }
+      .action-buttons button { font-size: 12px; padding: 0 4px; }
+      .action-buttons button:nth-child(-n+3) { font-size: 11px; }
+
+      /* Area tengah */
+      .middle { min-height: 370px; margin: 4px auto; }
+
+      /* Skor dan penalti: ringkas, empat kolom */
+      .corner-panel { font-size: 12px; padding: 8px; }
+      .corner-panel h3 { margin: 4px 0; font-size: 12px; }
+      .corner-panel .player-score { padding: 3px 0; }
+      .score-corner #turn-indicator { margin: 0 0 4px; font-size: 13px; }
+      .corner-panel {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        column-gap: 10px;
+      }
+      .corner-panel > #turn-indicator,
+      .corner-panel > h3 { grid-column: 1 / -1; }
+      .corner-panel .player-score {
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        border-bottom: 0;
+        border: 1px solid #34453b;
+        border-radius: 8px;
+      }
+      .corner-panel .player-score b { font-size: 15px; }
+    }
+
+    /* Layar sangat sempit: tombol aksi lebih rapat */
+    @media (max-width: 380px) {
+      .card { width: 33px; height: 48px; }
+      .table > .player > .cards .card { width: 37px; height: 54px; }
+      .table > .player .action-buttons { --sisi: 56px; }
+    }
+
+    /* HP posisi mendatar: layar pendek, kecilkan kartu dan jarak */
+    @media (min-width: 851px) and (max-height: 560px) {
+      .table { --tinggi-sisi: 360px; gap: 8px; padding: 10px; }
+      .card { width: 36px; height: 52px; font-size: 14px; }
+      .middle { min-height: 250px; margin: 0 auto; }
+    }
+
   </style>
 </head>
 <body>
@@ -1068,7 +1250,7 @@
 
   <!-- APLIKASI PERMAINAN: DIBUKA SETELAH LOGIN -->
   <div id="game-app" hidden>
-      <!-- LAYAR PENGATURAN PERMAINAN (muncul sebelum permainan dimulai) -->
+  <!-- LAYAR PENGATURAN PERMAINAN (muncul sebelum permainan dimulai) -->
   <div id="setup-screen" hidden>
     <form class="setup-card" id="setup-form" novalidate>
       <h2>Pengaturan Permainan</h2>
@@ -1092,6 +1274,7 @@
       <button type="submit">MULAI PERMAINAN</button>
     </form>
   </div>
+
     <div id="session-bar">
       <span id="session-user"></span>
       <div class="session-actions">
@@ -1284,6 +1467,7 @@ function createDeck(jokerCount = 4) {
     }
   }
 
+  
   // Joker: jumlahnya 2, 3, atau 4. Warna bergantian merah dan hitam.
   for (let i = 0; i < jokerCount; i++) {
     const isRed = i % 2 === 0;
@@ -1364,7 +1548,7 @@ function renderScores() {
 
     element.textContent = String(score);
   });
-  
+
   // Tampilkan target poin di panel skor.
   const targetInfo = document.getElementById("target-info");
   if (targetInfo) {
@@ -3227,7 +3411,7 @@ document.getElementById("new-game-button").addEventListener("click", () => {
 
   openSetup();
 });
-  
+
 </script>
 
 <script>
@@ -3291,6 +3475,7 @@ function setGameMode(mode) {
       JSON.stringify({ username: username, role: role })
     );
 
+
     if (role === "admin") {
       modeMenu.hidden = false;
       setGameMode("develop");
@@ -3298,7 +3483,7 @@ function setGameMode(mode) {
       modeMenu.hidden = true;
       setGameMode("live");
     }
-      openSetup();
+    openSetup();
   }
 
   loginForm.addEventListener("submit", function (event) {
@@ -3444,5 +3629,42 @@ window.addEventListener("resize", fitMeldCards);
 fitMeldCards();
 </script>
   
+<script>
+/* Tampilan sempit: kartu tangan satu baris, saling menumpuk jika tidak cukup. */
+function fitRowHands() {
+  const narrow = window.matchMedia("(max-width: 850px)").matches;
+  ["player-hand", "player-1-hand", "player-2-hand", "player-3-hand"].forEach(id => {
+    const box = document.getElementById(id);
+    if (!box) return;
+    const items = Array.from(box.children);
+    items.forEach(el => { el.style.marginLeft = ""; });
+    if (!narrow || items.length < 2) return;
+    const avail = box.clientWidth;
+    if (avail <= 0) return;
+    const w = items[0].offsetWidth;
+    const gap = parseFloat(getComputedStyle(box).columnGap) || 0;
+    const naturalStep = w + gap;
+    const needed = naturalStep * (items.length - 1) + w;
+    if (needed <= avail) return;
+    const step = (avail - w) / (items.length - 1);
+    const shift = step - naturalStep;
+    items.forEach((el, i) => { if (i > 0) el.style.marginLeft = shift + "px"; });
+  });
+}
+(function () {
+  ["renderPlayerHand", "renderOpponentHands"].forEach(name => {
+    const asli = window[name];
+    if (typeof asli !== "function") return;
+    window[name] = function () {
+      const hasil = asli.apply(this, arguments);
+      fitRowHands();
+      return hasil;
+    };
+  });
+  window.addEventListener("resize", () => { fitRowHands(); fitMeldCards(); fitSideHands(); if (typeof renderDiscardPile === "function") try { renderDiscardPile(); } catch (e) {} });
+  fitRowHands();
+})();
+</script>
+
 </body>
 </html>
